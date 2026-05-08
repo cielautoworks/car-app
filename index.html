@@ -29,6 +29,7 @@
   .sync-badge{font-size:10px;padding:3px 8px;border-radius:20px;background:var(--green-bg);color:var(--green);font-weight:500}
   .sync-badge.error{background:var(--red-bg);color:var(--red)}
   .sync-badge.saving{background:var(--amber-bg);color:var(--amber)}
+  .sync-badge.connecting{background:var(--blue-bg);color:var(--blue)}
   .tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:53px;z-index:49}
   .tab{flex:1;padding:10px 4px;text-align:center;font-size:12px;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;font-weight:500;transition:all .15s}
   .tab.active{color:var(--text);border-bottom-color:var(--accent)}
@@ -58,7 +59,7 @@
   .stat{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:10px;text-align:center;box-shadow:var(--shadow)}
   .stat-n{font-size:24px;font-weight:700}
   .stat-l{font-size:10px;color:var(--text3);margin-top:2px}
-  input[type=text],input[type=file],select,textarea{width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:13px;font-family:inherit;outline:none}
+  input[type=text],select,textarea{width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:13px;font-family:inherit;outline:none}
   input:focus,select:focus,textarea:focus{border-color:var(--accent)}
   .lbl{font-size:11px;color:var(--text2);margin-bottom:4px;margin-top:10px;font-weight:700}
   .lbl:first-child{margin-top:0}
@@ -82,23 +83,22 @@
   .dtable td{padding:5px 0;vertical-align:top;border-bottom:1px solid var(--border)}
   .dtable td:first-child{color:var(--text2);width:90px;padding-right:8px}
   .dtable tr:last-child td{border-bottom:none}
-  /* チェックボックス一括操作 */
-  .bulk-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .bulk-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;box-shadow:var(--shadow)}
   .bulk-bar select{width:auto;flex:1;min-width:120px}
   input[type=checkbox]{width:18px;height:18px;cursor:pointer;accent-color:var(--accent);flex-shrink:0}
   .stock-item{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:10px;margin-bottom:8px;box-shadow:var(--shadow);display:flex;gap:8px;align-items:flex-start}
   .stock-item.checked{border-color:var(--accent);background:#f0faf4}
   .stock-item-body{flex:1;min-width:0;cursor:pointer}
-  .spinner-wrap{position:fixed;inset:0;background:rgba(255,255,255,0.8);z-index:400;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px}
+  .spinner-wrap{position:fixed;inset:0;background:rgba(255,255,255,0.88);z-index:400;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px}
   .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 
-<div class="spinner-wrap hidden" id="loading">
+<div class="spinner-wrap" id="loading">
   <div class="spinner"></div>
-  <p style="font-size:13px;color:var(--text2)" id="loading-msg">読み込み中...</p>
+  <p style="font-size:13px;color:var(--text2)" id="loading-msg">Firebaseに接続中...</p>
 </div>
 
 <div class="app">
@@ -107,7 +107,7 @@
       <div class="header-title">🚗 中古車管理</div>
       <div class="header-sub">ciel autoworks</div>
     </div>
-    <span class="sync-badge" id="sync-st">● 保存済み</span>
+    <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
   <div class="tabs">
     <div class="tab active" onclick="switchTab('loaner')">代車</div>
@@ -132,12 +132,11 @@
   <div id="tab-stock" class="content hidden">
     <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
       <button class="btn btn-sm btn-primary" onclick="document.getElementById('csv-input').click()">📂 CSV読込</button>
-      <input type="file" id="csv-input" accept=".csv,.CSV" class="hidden" onchange="importCSV(event)">
+      <input type="file" id="csv-input" accept=".csv,.CSV" style="display:none" onchange="importCSV(event)">
       <span style="font-size:11px;color:var(--text3)" id="csv-count"></span>
     </div>
     <div class="stats" id="stock-stats"></div>
-    <!-- 一括操作バー -->
-    <div class="bulk-bar" id="bulk-bar">
+    <div class="bulk-bar">
       <input type="checkbox" id="chk-all" onchange="toggleAll(this.checked)" title="全選択">
       <span style="font-size:12px;color:var(--text2)" id="chk-count">0件選択</span>
       <select id="bulk-action">
@@ -150,7 +149,7 @@
       <button class="btn btn-sm btn-primary" onclick="applyBulk()">実行</button>
     </div>
     <div class="search-row">
-      <input id="stock-search" type="text" placeholder="車名・車台番号で検索..." oninput="renderStock()">
+      <input type="text" id="stock-search" placeholder="車名・車台番号で検索..." oninput="renderStock()">
       <select id="stock-filter" onchange="renderStock()">
         <option value="">すべて</option>
         <option value="instock">在庫</option>
@@ -174,16 +173,9 @@
 </div>
 
 <!-- モーダル群 -->
-<div class="modal-wrap" id="modal-action">
-  <div class="modal-box">
-    <div class="modal-handle"></div>
-    <p class="modal-title" id="ma-title"></p>
-    <div id="ma-body"></div>
-  </div>
-</div>
+<div class="modal-wrap" id="modal-action"><div class="modal-box"><div class="modal-handle"></div><p class="modal-title" id="ma-title"></p><div id="ma-body"></div></div></div>
 <div class="modal-wrap" id="modal-add-car">
-  <div class="modal-box">
-    <div class="modal-handle"></div>
+  <div class="modal-box"><div class="modal-handle"></div>
     <p class="modal-title">代車を新規追加</p>
     <p class="lbl">車種名</p><input type="text" id="nc-name" placeholder="例：ホンダ フィット">
     <p class="lbl">ナンバープレート</p><input type="text" id="nc-plate" placeholder="例：新潟 300 あ 1234">
@@ -194,8 +186,7 @@
   </div>
 </div>
 <div class="modal-wrap" id="modal-add-from-stock">
-  <div class="modal-box">
-    <div class="modal-handle"></div>
+  <div class="modal-box"><div class="modal-handle"></div>
     <p class="modal-title">販売車から代車に追加</p>
     <p style="font-size:12px;color:var(--text2);margin-bottom:10px">在庫・整備中の販売車を代車としても使用できます</p>
     <div id="stock-for-loaner-list"></div>
@@ -203,34 +194,24 @@
   </div>
 </div>
 <div class="modal-wrap" id="modal-upload">
-  <div class="modal-box">
-    <div class="modal-handle"></div>
+  <div class="modal-box"><div class="modal-handle"></div>
     <p class="modal-title">点検シートアップロード</p>
-    <p class="lbl">車両を選択（任意）</p>
-    <select id="up-vehicle"></select>
-    <p class="lbl">または車種名を直接入力</p>
-    <input type="text" id="up-name" placeholder="例：トヨタ プリウス">
-    <p class="lbl">メモ（任意）</p>
-    <input type="text" id="up-memo" placeholder="例：タイヤ要確認">
+    <p class="lbl">車両を選択（任意）</p><select id="up-vehicle"></select>
+    <p class="lbl">または車種名を直接入力</p><input type="text" id="up-name" placeholder="例：トヨタ プリウス">
+    <p class="lbl">メモ（任意）</p><input type="text" id="up-memo" placeholder="例：タイヤ要確認">
     <p class="lbl">写真</p>
     <div style="border:2px dashed var(--border2);border-radius:var(--radius-sm);padding:16px;text-align:center;cursor:pointer;color:var(--text3)" onclick="document.getElementById('file-input').click()">
       <div id="up-preview"><div style="font-size:24px">📷</div><p style="font-size:13px">タップして写真を選択</p></div>
     </div>
-    <input type="file" id="file-input" accept="image/*" class="hidden" onchange="previewPhoto(event)">
-    <div id="up-progress" class="hidden" style="margin-top:8px;font-size:12px;color:var(--green);font-weight:700;text-align:center"></div>
+    <input type="file" id="file-input" accept="image/*" style="display:none" onchange="previewPhoto(event)">
+    <div id="up-progress" style="display:none;margin-top:8px;font-size:12px;color:var(--green);font-weight:700;text-align:center"></div>
     <div style="display:flex;gap:8px;margin-top:14px">
       <button class="btn" style="flex:1" onclick="closeModal('modal-upload')">キャンセル</button>
       <button class="btn btn-primary" style="flex:1" id="btn-save-insp" onclick="saveInsp()">保存</button>
     </div>
   </div>
 </div>
-<div class="modal-wrap" id="modal-stock-detail">
-  <div class="modal-box">
-    <div class="modal-handle"></div>
-    <p class="modal-title" id="sd-title"></p>
-    <div id="sd-body"></div>
-  </div>
-</div>
+<div class="modal-wrap" id="modal-stock-detail"><div class="modal-box"><div class="modal-handle"></div><p class="modal-title" id="sd-title"></p><div id="sd-body"></div></div></div>
 <div class="full-wrap" id="full-img">
   <div class="close-x" onclick="closeFullImg()">✕</div>
   <img id="full-img-el" src="">
@@ -240,67 +221,78 @@
   </div>
 </div>
 
-<script>
-// ===== ストレージ（localStorage＋window.storage両対応）=====
-const Store = {
-  async get(k){
-    // window.storage があれば優先（Claude埋め込み環境）
-    if(window.storage){
-      try{ const r=await window.storage.get(k,true); return r?JSON.parse(r.value):null; }catch(e){}
-    }
-    try{ const v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){ return null; }
-  },
-  async set(k,v){
-    if(window.storage){
-      try{ await window.storage.set(k,JSON.stringify(v),true); }catch(e){}
-    }
-    try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){}
-  }
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, update, remove, onValue }
+                             from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAFJKdWkTa9WvX9W3ZA95P0BoDDugQUkuM",
+  authDomain: "ciel-autoworks.firebaseapp.com",
+  databaseURL: "https://ciel-autoworks-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "ciel-autoworks",
+  storageBucket: "ciel-autoworks.firebasestorage.app",
+  messagingSenderId: "266528519369",
+  appId: "1:266528519369:web:d32686387aa9b0362cc918"
 };
 
-const KEYS={cars:'ca-cars-v1',stock:'ca-stock-v1',insp:'ca-insp-v1'};
-let cars={}, stockVehicles={}, inspections={};
+const fbApp = initializeApp(firebaseConfig);
+const db    = getDatabase(fbApp);
+
+// ===== 状態 =====
+let cars={}, stock={}, inspections={};
 let uploadDataUrl=null, selectedCarId=null;
 let checkedIds=new Set();
+let ready=false;
 
 function today(){ return new Date().toLocaleDateString('ja-JP',{month:'2-digit',day:'2-digit'}); }
 function nowTs(){ return Date.now(); }
 function fmt(n){ return n?Number(n).toLocaleString():'0'; }
 function uid(){ return 'i'+nowTs()+Math.random().toString(36).slice(2,6); }
+
 function setSyncSt(t,s='ok'){
   const el=document.getElementById('sync-st');
   el.textContent=t;
-  el.className='sync-badge'+(s==='error'?' error':s==='saving'?' saving':'');
+  el.className='sync-badge'+(s==='error'?' error':s==='saving'?' saving':s==='connecting'?' connecting':'');
 }
-function showLoading(msg='処理中...'){ document.getElementById('loading-msg').textContent=msg; document.getElementById('loading').classList.remove('hidden'); }
-function hideLoading(){ document.getElementById('loading').classList.add('hidden'); }
+function showLoading(msg){ document.getElementById('loading-msg').textContent=msg||'処理中...'; document.getElementById('loading').style.display='flex'; }
+function hideLoading(){ document.getElementById('loading').style.display='none'; }
 
-async function save(){
-  setSyncSt('● 保存中...','saving');
-  await Store.set(KEYS.cars,cars);
-  await Store.set(KEYS.stock,stockVehicles);
-  await Store.set(KEYS.insp,inspections);
-  setSyncSt('● 保存済み','ok');
+// ===== Firebase リスナー =====
+function startListeners(){
+  // 接続状態
+  onValue(ref(db,'.info/connected'), snap=>{
+    if(snap.val()){
+      setSyncSt('● 同期中','ok');
+      if(!ready){ ready=true; hideLoading(); }
+    } else {
+      setSyncSt('● 再接続中...','connecting');
+    }
+  });
+  // 各データのリアルタイム購読
+  onValue(ref(db,'cars'), snap=>{ cars=snap.val()||{}; renderLoanerStats(); renderLoaner(); });
+  onValue(ref(db,'stock'), snap=>{
+    stock=snap.val()||{};
+    renderStockStats(); renderStock();
+    const n=Object.keys(stock).length;
+    document.getElementById('csv-count').textContent=n?`全${n}台`:'';
+  });
+  onValue(ref(db,'inspections'), snap=>{ inspections=snap.val()||{}; renderInspections(); });
 }
 
-async function init(){
-  showLoading('データ読み込み中...');
-  cars       = (await Store.get(KEYS.cars))  || {};
-  stockVehicles = (await Store.get(KEYS.stock)) || {};
-  inspections   = (await Store.get(KEYS.insp))  || {};
-  hideLoading();
-  render();
-}
-
-function render(){ renderLoanerStats();renderLoaner();renderStockStats();renderStock();renderInspections(); }
+// DB操作ラッパー
+async function dbSet(path,data){ setSyncSt('● 保存中...','saving'); await set(ref(db,path),data); }
+async function dbUpd(path,data){ setSyncSt('● 保存中...','saving'); await update(ref(db,path),data); }
+async function dbDel(path){ await remove(ref(db,path)); }
 
 // ===== タブ・モーダル =====
-function switchTab(tab){
+window.switchTab=function(tab){
   ['loaner','stock','inspection'].forEach(t=>document.getElementById('tab-'+t).classList.toggle('hidden',t!==tab));
   document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['loaner','stock','inspection'][i]===tab));
-}
-function openModal(id){ document.getElementById(id).classList.add('open'); }
-function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+};
+window.openModal =id=>document.getElementById(id).classList.add('open');
+window.closeModal=id=>document.getElementById(id).classList.remove('open');
 
 // ===== 代車 =====
 function renderLoanerStats(){
@@ -345,7 +337,8 @@ function renderLoaner(){
     </div>`;
   }).join('');
 }
-function openAction(carId,action){
+
+window.openAction=function(carId,action){
   selectedCarId=carId;
   const car=cars[carId];
   const lbl={out:`貸出: ${car.name}`,reserve:`予約: ${car.name}`,return:`返却確認: ${car.name}`,cancel:`予約取消: ${car.name}`};
@@ -369,204 +362,156 @@ function openAction(carId,action){
     <button class="btn btn-danger" style="flex:1" onclick="doAction('cancel')">取消</button></div>`;
   document.getElementById('ma-body').innerHTML=body;
   openModal('modal-action');
-}
-async function doAction(action){
+};
+
+window.doAction=async function(action){
   const car={...cars[selectedCarId]};
   const b=document.getElementById('act-b');
   if(action==='out'){car.status='out';car.borrower=(b?.value||'').trim()||'不明';car.since=today();}
   else if(action==='reserve'){car.status='reserved';car.borrower=(b?.value||'').trim()||'不明';}
   else if(action==='return'){car.status='available';car.borrower=null;car.since=null;}
   else if(action==='cancel'){car.status='available';car.borrower=null;}
-  cars[car.id]=car;
-  await save(); closeModal('modal-action'); render();
-}
-async function addCar(){
+  await dbSet(`cars/${car.id}`,car);
+  closeModal('modal-action');
+};
+
+window.addCar=async function(){
   const name=document.getElementById('nc-name').value.trim();
   const plate=document.getElementById('nc-plate').value.trim();
   if(!name){alert('車種名を入力してください');return;}
   const id=uid();
-  cars[id]={id,name,plate:plate||'未登録',status:'available',fromStock:false,addedAt:nowTs()};
-  await save();
+  await dbSet(`cars/${id}`,{id,name,plate:plate||'未登録',status:'available',fromStock:false,addedAt:nowTs()});
   document.getElementById('nc-name').value='';document.getElementById('nc-plate').value='';
-  closeModal('modal-add-car'); render();
-}
-async function removeCar(id){
+  closeModal('modal-add-car');
+};
+
+window.removeCar=async function(id){
   const car=cars[id];if(!car)return;
   if(!confirm(`「${car.name}」を削除しますか？`))return;
-  if(car.stockId && stockVehicles[car.stockId]){
-    stockVehicles[car.stockId].isLoaner=false;
-    stockVehicles[car.stockId].status=stockVehicles[car.stockId].prevStatus||'instock';
+  if(car.stockId&&stock[car.stockId]){
+    await dbUpd(`stock/${car.stockId}`,{isLoaner:false,status:stock[car.stockId].prevStatus||'instock'});
   }
-  delete cars[id]; await save(); render();
-}
-function openAddFromStock(){
+  await dbDel(`cars/${id}`);
+};
+
+window.openAddFromStock=function(){
   const el=document.getElementById('stock-for-loaner-list');
-  const avail=Object.values(stockVehicles).filter(v=>v.status==='instock'||v.status==='prep');
+  const avail=Object.values(stock).filter(v=>v.status==='instock'||v.status==='prep');
   if(!avail.length){el.innerHTML='<p style="text-align:center;color:var(--text3);padding:16px 0">在庫・整備中の販売車がありません</p>';openModal('modal-add-from-stock');return;}
   el.innerHTML=avail.map(v=>{
     const already=Object.values(cars).some(c=>c.stockId===v.id);
     return`<div class="item-row" style="align-items:center">
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:13px">${v.name}</div>
-        <div style="font-size:11px;color:var(--text2)">${v.vin||''} ${v.regNo?'/ '+v.regNo:''}</div>
-      </div>
+      <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px">${v.name}</div>
+      <div style="font-size:11px;color:var(--text2)">${v.vin||''} ${v.regNo?'/ '+v.regNo:''}</div></div>
       ${already?'<span class="badge b-loan">登録済</span>':`<button class="btn btn-sm btn-blue" onclick="addFromStock('${v.id}')">代車に追加</button>`}
     </div>`;
   }).join('');
   openModal('modal-add-from-stock');
-}
-async function addFromStock(vid){
-  const v=stockVehicles[vid];if(!v)return;
+};
+
+window.addFromStock=async function(vid){
+  const v=stock[vid];if(!v)return;
   if(Object.values(cars).some(c=>c.stockId===vid)){alert('すでに登録されています');return;}
   const id=uid();
-  cars[id]={id,name:v.name,plate:v.regNo||'未登録',status:'available',fromStock:true,stockId:vid,addedAt:nowTs()};
-  v.isLoaner=true; v.prevStatus=v.status;
-  await save(); openAddFromStock(); render();
-}
-async function addFromStockDirect(vid){
-  const v=stockVehicles[vid];if(!v)return;
+  await Promise.all([
+    dbSet(`cars/${id}`,{id,name:v.name,plate:v.regNo||'未登録',status:'available',fromStock:true,stockId:vid,addedAt:nowTs()}),
+    dbUpd(`stock/${vid}`,{isLoaner:true,prevStatus:v.status})
+  ]);
+  openAddFromStock();
+};
+
+window.addFromStockDirect=async function(vid){
+  const v=stock[vid];if(!v)return;
   if(Object.values(cars).some(c=>c.stockId===vid)){alert('すでに代車登録されています');return;}
   const id=uid();
-  cars[id]={id,name:v.name,plate:v.regNo||'未登録',status:'available',fromStock:true,stockId:vid,addedAt:nowTs()};
-  v.isLoaner=true; v.prevStatus=v.status;
-  await save(); closeModal('modal-stock-detail'); render();
+  await Promise.all([
+    dbSet(`cars/${id}`,{id,name:v.name,plate:v.regNo||'未登録',status:'available',fromStock:true,stockId:vid,addedAt:nowTs()}),
+    dbUpd(`stock/${vid}`,{isLoaner:true,prevStatus:v.status})
+  ]);
+  closeModal('modal-stock-detail');
   alert(`「${v.name}」を代車に追加しました`);
-}
-async function removeFromLoaner(vid){
-  const v=stockVehicles[vid];if(!v)return;
+};
+
+window.removeFromLoaner=async function(vid){
+  const v=stock[vid];if(!v)return;
   const car=Object.values(cars).find(c=>c.stockId===vid);
   if(car){
     if(car.status==='out'){alert('貸出中のため外せません。先に返却処理をしてください。');return;}
-    delete cars[car.id];
+    await dbDel(`cars/${car.id}`);
   }
-  v.isLoaner=false; v.status=v.prevStatus||'instock';
-  await save(); closeModal('modal-stock-detail'); render();
-}
+  await dbUpd(`stock/${vid}`,{isLoaner:false,status:v.prevStatus||'instock'});
+  closeModal('modal-stock-detail');
+};
 
-// ===== CSV読込（棚卸一覧専用：9行目ヘッダー・10行目データ）=====
-function importCSV(e){
+// ===== CSV読込 =====
+window.importCSV=function(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=ev=>{ parseCSV(ev.target.result); e.target.value=''; };
-  // Shift-JIS / UTF-8 BOM両対応
   reader.readAsText(file,'Shift-JIS');
-}
+};
 
 function parseCSV(text){
-  // BOM除去
   text=text.replace(/^\uFEFF/,'');
   const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
-
-  // 9行目（index=8）をヘッダー行として固定
-  // ただし念のため「車名」か「車台番号」が含まれる行を優先的に探す
-  let hi=8; // デフォルト：9行目
+  let hi=8;
   for(let i=0;i<Math.min(15,lines.length);i++){
-    if(lines[i].includes('車名')&&lines[i].includes('車台番号')){ hi=i; break; }
+    if(lines[i].includes('車名')&&lines[i].includes('車台番号')){hi=i;break;}
   }
-
   if(hi>=lines.length){alert('ヘッダー行が見つかりませんでした');return;}
   const hdrs=parseLine(lines[hi]).map(h=>h.replace(/"/g,'').trim());
-
-  // 列インデックス取得（列名で完全一致・複数候補対応）
-  const fi=(...cands)=>{ for(const c of cands){ const i=hdrs.indexOf(c); if(i>=0)return i; } return -1; };
+  const fi=(...c)=>{for(const x of c){const i=hdrs.indexOf(x);if(i>=0)return i;}return -1;};
   const idx={
-    date:  fi('仕入日'),
-    cdate: fi('契約日'),
-    ddate: fi('納車日'),
-    sdate: fi('売上日'),
-    num:   fi('車両仕入番号'),
-    seiri: fi('車両整理番号'),
-    seiri2:fi('整理番号'),
-    staff: fi('仕入担当名'),
-    name:  fi('車名'),
-    supNo: fi('仕入先番号'),
-    sup:   fi('仕入先名'),
-    colorNo:fi('色No'),
-    color: fi('色'),
-    vin:   fi('車台番号'),
-    type:  fi('型式類別'),
-    year:  fi('年式'),
-    shaken:fi('車検期限'),
-    equip: fi('装備品'),
-    price: fi('仕入金額'),
-    total: fi('合計'),
+    date:fi('仕入日'),cdate:fi('契約日'),ddate:fi('納車日'),sdate:fi('売上日'),
+    num:fi('車両仕入番号'),seiri:fi('車両整理番号'),seiri2:fi('整理番号'),
+    staff:fi('仕入担当名'),name:fi('車名'),sup:fi('仕入先名'),
+    colorNo:fi('色No'),color:fi('色'),vin:fi('車台番号'),
+    type:fi('型式類別'),year:fi('年式'),shaken:fi('車検期限'),
+    equip:fi('装備品'),price:fi('仕入金額'),total:fi('合計'),
   };
-
   const g=(row,i)=>i>=0&&i<row.length?row[i].replace(/^"|"$/g,'').trim():'';
-  const existVins=new Set(Object.values(stockVehicles).map(v=>v.vin).filter(Boolean));
-  let added=0, skipped=0;
+  const existVins=new Set(Object.values(stock).map(v=>v.vin).filter(Boolean));
+  const batch={};let added=0,skipped=0;
 
   for(let i=hi+1;i<lines.length;i++){
     const row=parseLine(lines[i]);
     if(!row||row.length<5)continue;
-    // データ行判定：仕入日列が日付っぽい or 整理番号列が数字
-    const firstCell=g(row,0);
-    if(!firstCell)continue;
-    // 「平成」「令和」「西暦」で始まる行をデータ行とみなす
-    if(!/^(平成|令和|昭和|\d{4})/.test(firstCell))continue;
-
+    const first=g(row,0);
+    if(!first||!/^(平成|令和|昭和|\d{4})/.test(first))continue;
     const vin=g(row,idx.vin);
     if(vin&&existVins.has(vin)){skipped++;continue;}
-
     const id=uid();
     const v={
-      id,
-      date:  fmtDate(g(row,idx.date)),
-      cdate: fmtDate(g(row,idx.cdate)),
-      ddate: fmtDate(g(row,idx.ddate)),
-      sdate: fmtDate(g(row,idx.sdate)),
-      num:   g(row,idx.num),
-      seiri: g(row,idx.seiri)||g(row,idx.seiri2),
-      staff: g(row,idx.staff),
-      name:  kana2full(g(row,idx.name)),
-      sup:   g(row,idx.sup),
-      color: g(row,idx.color),
-      vin,
-      type:  g(row,idx.type),
-      year:  fmtDate(g(row,idx.year)),
-      shaken:fmtDate(g(row,idx.shaken)),
-      equip: g(row,idx.equip),
-      price: g(row,idx.price),
-      total: g(row,idx.total),
-      regNo: '',
-      loc:   '本社',
-      status:'instock', memo:'', isLoaner:false, addedAt:nowTs()
+      id,date:fmtDate(g(row,idx.date)),cdate:fmtDate(g(row,idx.cdate)),
+      ddate:fmtDate(g(row,idx.ddate)),sdate:fmtDate(g(row,idx.sdate)),
+      num:g(row,idx.num),seiri:g(row,idx.seiri)||g(row,idx.seiri2),
+      staff:g(row,idx.staff),name:kana2full(g(row,idx.name)),sup:g(row,idx.sup),
+      color:g(row,idx.color),vin,type:g(row,idx.type),
+      year:fmtDate(g(row,idx.year)),shaken:fmtDate(g(row,idx.shaken)),
+      equip:g(row,idx.equip),price:g(row,idx.price),total:g(row,idx.total),
+      regNo:'',loc:'本社',status:'instock',memo:'',isLoaner:false,addedAt:nowTs()
     };
-    if(v.name||v.vin){
-      stockVehicles[id]=v;
-      if(vin)existVins.add(vin);
-      added++;
-    }
+    if(v.name||v.vin){batch[id]=v;if(vin)existVins.add(vin);added++;}
   }
-
-  if(!added){alert(`読み込み完了\n追加: 0台 / スキップ(重複): ${skipped}台\n\nヒント: すでに同じ車台番号のデータが登録済みです`);return;}
-  save().then(()=>{
-    renderStockStats(); renderStock();
+  if(!added){alert(`追加: 0台 / スキップ(重複): ${skipped}台`);return;}
+  update(ref(db,'stock'),batch).then(()=>{
     alert(`読み込み完了 ✅\n追加: ${added}台 / スキップ(重複): ${skipped}台`);
-  });
+  }).catch(err=>alert('保存エラー: '+err.message));
 }
 
 function parseLine(line){
   const res=[];let cur='';let inQ=false;
   for(const c of line){
     if(c==='"'){inQ=!inQ;}
-    else if(c===','&&!inQ){res.push(cur);cur='';}
-    else if(c==='\t'&&!inQ){res.push(cur);cur='';}
+    else if((c===','||c==='\t')&&!inQ){res.push(cur);cur='';}
     else{cur+=c;}
   }
   res.push(cur);return res;
 }
-
 function kana2full(s){
   if(!s)return s;
-  const m={'ｦ':'ヲ','ｧ':'ァ','ｨ':'ィ','ｩ':'ゥ','ｪ':'ェ','ｫ':'ォ','ｬ':'ャ','ｭ':'ュ','ｮ':'ョ','ｯ':'ッ','ｰ':'ー',
-    'ｱ':'ア','ｲ':'イ','ｳ':'ウ','ｴ':'エ','ｵ':'オ','ｶ':'カ','ｷ':'キ','ｸ':'ク','ｹ':'ケ','ｺ':'コ',
-    'ｻ':'サ','ｼ':'シ','ｽ':'ス','ｾ':'セ','ｿ':'ソ','ﾀ':'タ','ﾁ':'チ','ﾂ':'ツ','ﾃ':'テ','ﾄ':'ト',
-    'ﾅ':'ナ','ﾆ':'ニ','ﾇ':'ヌ','ﾈ':'ネ','ﾉ':'ノ','ﾊ':'ハ','ﾋ':'ヒ','ﾌ':'フ','ﾍ':'ヘ','ﾎ':'ホ',
-    'ﾏ':'マ','ﾐ':'ミ','ﾑ':'ム','ﾒ':'メ','ﾓ':'モ','ﾔ':'ヤ','ﾕ':'ユ','ﾖ':'ヨ',
-    'ﾗ':'ラ','ﾘ':'リ','ﾙ':'ル','ﾚ':'レ','ﾛ':'ロ','ﾜ':'ワ','ﾝ':'ン'};
-  const dk={'カ':'ガ','キ':'ギ','ク':'グ','ケ':'ゲ','コ':'ゴ','サ':'ザ','シ':'ジ','ス':'ズ','セ':'ゼ','ソ':'ゾ',
-    'タ':'ダ','チ':'ヂ','ツ':'ヅ','テ':'デ','ト':'ド','ハ':'バ','ヒ':'ビ','フ':'ブ','ヘ':'ベ','ホ':'ボ','ウ':'ヴ'};
+  const m={'ｦ':'ヲ','ｧ':'ァ','ｨ':'ィ','ｩ':'ゥ','ｪ':'ェ','ｫ':'ォ','ｬ':'ャ','ｭ':'ュ','ｮ':'ョ','ｯ':'ッ','ｰ':'ー','ｱ':'ア','ｲ':'イ','ｳ':'ウ','ｴ':'エ','ｵ':'オ','ｶ':'カ','ｷ':'キ','ｸ':'ク','ｹ':'ケ','ｺ':'コ','ｻ':'サ','ｼ':'シ','ｽ':'ス','ｾ':'セ','ｿ':'ソ','ﾀ':'タ','ﾁ':'チ','ﾂ':'ツ','ﾃ':'テ','ﾄ':'ト','ﾅ':'ナ','ﾆ':'ニ','ﾇ':'ヌ','ﾈ':'ネ','ﾉ':'ノ','ﾊ':'ハ','ﾋ':'ヒ','ﾌ':'フ','ﾍ':'ヘ','ﾎ':'ホ','ﾏ':'マ','ﾐ':'ミ','ﾑ':'ム','ﾒ':'メ','ﾓ':'モ','ﾔ':'ヤ','ﾕ':'ユ','ﾖ':'ヨ','ﾗ':'ラ','ﾘ':'リ','ﾙ':'ル','ﾚ':'レ','ﾛ':'ロ','ﾜ':'ワ','ﾝ':'ン'};
+  const dk={'カ':'ガ','キ':'ギ','ク':'グ','ケ':'ゲ','コ':'ゴ','サ':'ザ','シ':'ジ','ス':'ズ','セ':'ゼ','ソ':'ゾ','タ':'ダ','チ':'ヂ','ツ':'ヅ','テ':'デ','ト':'ド','ハ':'バ','ヒ':'ビ','フ':'ブ','ヘ':'ベ','ホ':'ボ','ウ':'ヴ'};
   const hdk={'ハ':'パ','ヒ':'ピ','フ':'プ','ヘ':'ペ','ホ':'ポ'};
   const arr=s.split('').map(c=>m[c]||c);
   let result='';
@@ -577,7 +522,6 @@ function kana2full(s){
   }
   return result;
 }
-
 function fmtDate(s){
   if(!s)return '';
   let m=s.match(/令和\s*(\d+)\s*[\/．年]\s*(\d+)\s*[\/．月]\s*(\d+)/);
@@ -593,7 +537,7 @@ function fmtDate(s){
 
 // ===== 販売車描画 =====
 function renderStockStats(){
-  const list=Object.values(stockVehicles);
+  const list=Object.values(stock);
   const a=list.filter(v=>v.status==='instock').length;
   const b=list.filter(v=>v.status==='prep').length;
   const c=list.filter(v=>v.status==='sold').length;
@@ -604,34 +548,30 @@ function renderStockStats(){
   document.getElementById('csv-count').textContent=list.length?`全${list.length}台`:'';
 }
 
-function renderStock(){
+window.renderStock=function(){
   const q=(document.getElementById('stock-search')?.value||'').toLowerCase();
   const f=document.getElementById('stock-filter')?.value||'';
-  let list=Object.values(stockVehicles).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+  let list=Object.values(stock).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
   if(q)list=list.filter(v=>(v.name||'').toLowerCase().includes(q)||(v.vin||'').includes(q));
   if(f==='loaner')list=list.filter(v=>v.isLoaner);
   else if(f)list=list.filter(v=>v.status===f);
-
   const el=document.getElementById('stock-list');
   if(!list.length){
-    el.innerHTML=`<div class="card" style="text-align:center;color:var(--text3);padding:20px 0">${Object.keys(stockVehicles).length?'該当なし':'📂 上の「CSV読込」ボタンからインポートしてください'}</div>`;
+    el.innerHTML=`<div class="card" style="text-align:center;color:var(--text3);padding:20px 0">${Object.keys(stock).length?'該当なし':'📂 上の「CSV読込」ボタンからインポートしてください'}</div>`;
     return;
   }
-
-  // チェック状態を維持（フィルタ後のIDだけ残す）
-  const visibleIds=new Set(list.map(v=>v.id));
-  checkedIds.forEach(id=>{ if(!visibleIds.has(id)) checkedIds.delete(id); });
-
+  const visIds=new Set(list.map(v=>v.id));
+  checkedIds.forEach(id=>{if(!visIds.has(id))checkedIds.delete(id);});
   const sm={instock:'<span class="badge b-in">在庫</span>',prep:'<span class="badge b-pr">整備中</span>',sold:'<span class="badge b-so">売却済</span>'};
   el.innerHTML=list.map(v=>{
     const ic=Object.values(inspections).filter(i=>i.vehicleId===v.id).length;
     const lb=v.isLoaner?'<span class="badge b-loan">代車中</span>':'';
     const chk=checkedIds.has(v.id)?'checked':'';
-    return`<div class="stock-item ${chk?'checked':''}" id="si-${v.id}">
+    return`<div class="stock-item${chk?' checked':''}" id="si-${v.id}">
       <input type="checkbox" ${chk} onchange="toggleCheck('${v.id}',this.checked)" style="margin-top:2px">
       <div class="stock-item-body" onclick="openStockDetail('${v.id}')">
         <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${sm[v.status]||''}${lb}<span style="font-weight:700">${v.name||'不明'}</span></div>
-        <div style="font-size:11px;color:var(--text2);margin-top:2px">${v.vin||''} ${v.regNo?'/ '+v.regNo:''}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">${v.vin||''}</div>
         <div style="font-size:11px;color:var(--text3)">${v.date||''} ${v.sup?'/ '+v.sup:''}</div>
         ${v.color?`<div style="font-size:11px;color:var(--text3)">🎨 ${v.color}${v.year?' / '+v.year+'年式':''}</div>`:''}
         ${ic?`<span style="font-size:10px;background:var(--blue-bg);color:var(--blue);padding:1px 6px;border-radius:10px;margin-top:3px;display:inline-block">📋 ${ic}件</span>`:''}
@@ -643,71 +583,68 @@ function renderStock(){
     </div>`;
   }).join('');
   updateBulkBar();
-}
+};
 
-// ===== チェックボックス一括操作 =====
-function toggleCheck(id,checked){
-  if(checked) checkedIds.add(id); else checkedIds.delete(id);
+// ===== 一括操作 =====
+window.toggleCheck=function(id,checked){
+  if(checked)checkedIds.add(id);else checkedIds.delete(id);
   const el=document.getElementById('si-'+id);
-  if(el) el.classList.toggle('checked',checked);
+  if(el)el.classList.toggle('checked',checked);
   updateBulkBar();
-}
-function toggleAll(checked){
+};
+window.toggleAll=function(checked){
   document.querySelectorAll('#stock-list input[type=checkbox]').forEach(cb=>{
     const id=cb.getAttribute('onchange').match(/'([^']+)'/)[1];
     cb.checked=checked;
-    if(checked) checkedIds.add(id); else checkedIds.delete(id);
+    if(checked)checkedIds.add(id);else checkedIds.delete(id);
     const el=document.getElementById('si-'+id);
-    if(el) el.classList.toggle('checked',checked);
+    if(el)el.classList.toggle('checked',checked);
   });
   updateBulkBar();
-}
+};
 function updateBulkBar(){
   document.getElementById('chk-count').textContent=checkedIds.size+'件選択';
-  document.getElementById('chk-all').checked=
-    checkedIds.size>0&&checkedIds.size===document.querySelectorAll('#stock-list input[type=checkbox]').length;
+  const cbs=document.querySelectorAll('#stock-list input[type=checkbox]');
+  document.getElementById('chk-all').checked=checkedIds.size>0&&checkedIds.size===cbs.length;
 }
-async function applyBulk(){
+window.applyBulk=async function(){
   const action=document.getElementById('bulk-action').value;
   if(!action){alert('操作を選択してください');return;}
   if(!checkedIds.size){alert('車両を選択してください');return;}
-  const n=checkedIds.size;
   const lbl={loaner:'代車に変更',instock:'在庫車に変更',sold:'販売済みに変更',delete:'削除'}[action];
-  if(!confirm(`選択した${n}台を「${lbl}」しますか？`))return;
-
-  showLoading(`${n}台を処理中...`);
+  if(!confirm(`選択した${checkedIds.size}台を「${lbl}」しますか？`))return;
+  showLoading(`${checkedIds.size}台を処理中...`);
+  const promises=[];
   for(const id of checkedIds){
-    const v=stockVehicles[id];if(!v)continue;
+    const v=stock[id];if(!v)continue;
     if(action==='delete'){
-      // 代車として登録されていれば代車も削除
       const car=Object.values(cars).find(c=>c.stockId===id);
-      if(car) delete cars[car.id];
-      delete stockVehicles[id];
+      if(car)promises.push(dbDel(`cars/${car.id}`));
+      promises.push(dbDel(`stock/${id}`));
     }else if(action==='loaner'){
       if(!Object.values(cars).some(c=>c.stockId===id)){
         const cid=uid();
-        cars[cid]={id:cid,name:v.name,plate:v.regNo||'未登録',status:'available',fromStock:true,stockId:id,addedAt:nowTs()};
-        v.isLoaner=true; v.prevStatus=v.status;
+        promises.push(dbSet(`cars/${cid}`,{id:cid,name:v.name,plate:v.regNo||'未登録',status:'available',fromStock:true,stockId:id,addedAt:nowTs()}));
+        promises.push(dbUpd(`stock/${id}`,{isLoaner:true,prevStatus:v.status}));
       }
     }else if(action==='instock'){
-      v.status='instock'; v.isLoaner=false;
       const car=Object.values(cars).find(c=>c.stockId===id);
-      if(car) delete cars[car.id];
+      if(car)promises.push(dbDel(`cars/${car.id}`));
+      promises.push(dbUpd(`stock/${id}`,{status:'instock',isLoaner:false}));
     }else if(action==='sold'){
-      v.status='sold'; v.isLoaner=false;
       const car=Object.values(cars).find(c=>c.stockId===id);
-      if(car) delete cars[car.id];
+      if(car)promises.push(dbDel(`cars/${car.id}`));
+      promises.push(dbUpd(`stock/${id}`,{status:'sold',isLoaner:false}));
     }
   }
+  await Promise.all(promises);
   checkedIds.clear();
   document.getElementById('bulk-action').value='';
-  await save();
   hideLoading();
-  render();
-}
+};
 
-function openStockDetail(id){
-  const v=stockVehicles[id];if(!v)return;
+window.openStockDetail=function(id){
+  const v=stock[id];if(!v)return;
   document.getElementById('sd-title').textContent=v.name||'車両詳細';
   const ins=Object.values(inspections).filter(i=>i.vehicleId===id);
   const sopts=['instock','prep','sold'].map(s=>`<option value="${s}" ${v.status===s?'selected':''}>${{instock:'在庫',prep:'整備中',sold:'売却済'}[s]}</option>`).join('');
@@ -720,13 +657,10 @@ function openStockDetail(id){
     ['仕入先',v.sup],['担当者',v.staff],['保管場所',v.loc],
     ['仕入金額','¥'+fmt(v.price)],['合計金額','¥'+fmt(v.total)],
   ].filter(([,val])=>val&&val!=='¥0'&&val!=='¥').map(([k,val])=>`<tr><td>${k}</td><td>${val}</td></tr>`).join('');
-  if(v.equip){rows_extra=`<tr><td>装備品</td><td style="font-size:11px">${v.equip.replace(/\^/g,' / ')}</td></tr>`;}
   document.getElementById('sd-body').innerHTML=`
-    <table class="dtable">${rows}${v.equip?`<tr><td>装備品</td><td style="font-size:11px">${v.equip.replace(/\^/g,' / ')}</td></tr>`:''}</table>
-    <p class="lbl">ステータス</p><select id="sd-status">${sopts}</select>
-    ${lb}
-    <p class="lbl">メモ・備考</p>
-    <textarea id="sd-memo" rows="2" style="margin-bottom:10px">${v.memo||''}</textarea>
+    <table class="dtable">${rows}${v.equip?`<tr><td>装備品</td><td style="font-size:11px">${v.equip}</td></tr>`:''}</table>
+    <p class="lbl">ステータス</p><select id="sd-status">${sopts}</select>${lb}
+    <p class="lbl">メモ</p><textarea id="sd-memo" rows="2" style="margin-bottom:10px">${v.memo||''}</textarea>
     ${ins.length?`<p class="lbl">点検シート（${ins.length}件）</p>
     <div class="photo-grid" style="margin-bottom:10px">${ins.map(i=>`<div class="photo-card" onclick="viewPhotoById('${i.id}')">
       <img src="${i.photoUrl}" loading="lazy"><div class="photo-info">
@@ -737,38 +671,35 @@ function openStockDetail(id){
       <button class="btn btn-primary" style="flex:1" onclick="saveSD('${id}')">保存</button>
     </div>`;
   openModal('modal-stock-detail');
-}
-async function saveSD(id){
-  const v=stockVehicles[id];if(!v)return;
-  v.status=document.getElementById('sd-status').value;
-  v.memo=document.getElementById('sd-memo').value;
-  await save(); closeModal('modal-stock-detail'); render();
-}
+};
+
+window.saveSD=async function(id){
+  await dbUpd(`stock/${id}`,{
+    status:document.getElementById('sd-status').value,
+    memo:document.getElementById('sd-memo').value
+  });
+  closeModal('modal-stock-detail');
+};
 
 // ===== 点検シート =====
-function openUpload(){
-  const sorted=Object.values(stockVehicles)
-    .filter(v=>v.status!=='sold')
-    .sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
-  const sel=document.getElementById('up-vehicle');
-  sel.innerHTML='<option value="">-- 車両を選択 --</option>'+
-    sorted.map(v=>`<option value="${v.id}">${v.name}${v.vin?' ('+v.vin+')':''}${v.regNo?' / '+v.regNo:''}</option>`).join('');
+window.openUpload=function(){
+  const sorted=Object.values(stock).filter(v=>v.status!=='sold').sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+  document.getElementById('up-vehicle').innerHTML='<option value="">-- 車両を選択 --</option>'+
+    sorted.map(v=>`<option value="${v.id}">${v.name}${v.vin?' ('+v.vin+')':''}</option>`).join('');
   uploadDataUrl=null;
   document.getElementById('up-preview').innerHTML='<div style="font-size:24px">📷</div><p style="font-size:13px">タップして写真を選択</p>';
-  document.getElementById('up-name').value='';
-  document.getElementById('up-memo').value='';
-  const prog=document.getElementById('up-progress');
-  prog.classList.add('hidden'); prog.textContent='';
+  document.getElementById('up-name').value='';document.getElementById('up-memo').value='';
+  const prog=document.getElementById('up-progress');prog.style.display='none';prog.textContent='';
   openModal('modal-upload');
-}
-function previewPhoto(e){
+};
+
+window.previewPhoto=function(e){
   const file=e.target.files[0];if(!file)return;
-  const img=new Image();
-  const reader=new FileReader();
+  const img=new Image();const reader=new FileReader();
   reader.onload=ev=>{
     img.onload=()=>{
       const canvas=document.createElement('canvas');
-      const MAX=1200; let w=img.width,h=img.height;
+      const MAX=1200;let w=img.width,h=img.height;
       if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
       if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
       canvas.width=w;canvas.height=h;
@@ -779,26 +710,29 @@ function previewPhoto(e){
     img.src=ev.target.result;
   };
   reader.readAsDataURL(file);
-}
-async function saveInsp(){
+};
+
+window.saveInsp=async function(){
   const vid=document.getElementById('up-vehicle').value;
   const mn=document.getElementById('up-name').value.trim();
-  const v=vid?stockVehicles[vid]:null;
+  const v=vid?stock[vid]:null;
   const name=v?v.name:mn;
   if(!name){alert('車両を選択するか車種名を入力してください');return;}
   if(!uploadDataUrl){alert('写真を選択してください');return;}
   const memo=document.getElementById('up-memo').value.trim();
   const btn=document.getElementById('btn-save-insp');
   const prog=document.getElementById('up-progress');
-  btn.disabled=true; prog.classList.remove('hidden'); prog.textContent='📤 保存中...';
-  const id=uid();
-  inspections[id]={id,vehicleId:vid||null,carName:name,memo,photoUrl:uploadDataUrl,date:today(),addedAt:nowTs()};
-  await save();
-  prog.textContent='✅ 保存しました';
-  uploadDataUrl=null;
-  setTimeout(()=>closeModal('modal-upload'),700);
-  btn.disabled=false; render();
-}
+  btn.disabled=true;prog.style.display='block';prog.textContent='📤 保存中...';
+  try{
+    const id=uid();
+    await dbSet(`inspections/${id}`,{id,vehicleId:vid||null,carName:name,memo,photoUrl:uploadDataUrl,date:today(),addedAt:nowTs()});
+    prog.textContent='✅ 保存しました';
+    uploadDataUrl=null;
+    setTimeout(()=>closeModal('modal-upload'),700);
+  }catch(err){prog.textContent='❌ エラー: '+err.message;}
+  btn.disabled=false;
+};
+
 function renderInspections(){
   const grid=document.getElementById('photo-grid');
   const noP=document.getElementById('no-photos');
@@ -812,16 +746,18 @@ function renderInspections(){
       <div style="font-size:10px;color:var(--text3)">${ins.date}${ins.memo?' · '+ins.memo:''}</div>
     </div></div>`).join('');
 }
-function viewPhotoById(id){
+
+window.viewPhotoById=function(id){
   const ins=inspections[id];if(!ins)return;
   document.getElementById('full-img-el').src=ins.photoUrl;
   document.getElementById('full-img-name').textContent=ins.carName;
   document.getElementById('full-img-meta').textContent=ins.date+(ins.memo?' · '+ins.memo:'');
   document.getElementById('full-img').classList.add('open');
-}
-function closeFullImg(){ document.getElementById('full-img').classList.remove('open'); }
+};
+window.closeFullImg=()=>document.getElementById('full-img').classList.remove('open');
 
-init();
+// ===== 起動 =====
+startListeners();
 </script>
 </body>
 </html>
