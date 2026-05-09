@@ -168,7 +168,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.05</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.06</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -543,9 +543,12 @@ function carRowHTML(car){
   }
   const fb=car.fromStock?'<span class="badge b-loan-tag" style="font-size:10px">販売車兼用</span>':'';
   const sub=car.borrower?` <span style="font-size:11px;color:var(--text3)">${car.borrower}</span>`:'';
+  // 販売車から色を取得（fromStockの場合）
+  const stockColor=car.stockId&&stock[car.stockId]?toFullWidth(stock[car.stockId].color||''):'';
+  const colorStr=stockColor?`<span style="font-weight:600;color:#fff;margin-left:2px">${stockColor}</span>`:'';
   return`<div class="item-row">
     <div style="flex:1;min-width:0">
-      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${badge}${fb}<span style="font-weight:700">${car.name}</span></div>
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${badge}${fb}<span style="font-weight:700">${car.name}</span>${colorStr}</div>
       <div style="font-size:11px;color:var(--text2);margin-top:2px">${car.plate||''}${sub}</div>
     </div>
     <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${btns}
@@ -856,10 +859,11 @@ window.renderStock=function(){
             <span class="badge ${s2i.cls}">${s2i.label}</span>
             ${v.needsParts?'<span class="badge b-parts" style="font-size:10px">🔩部品待ち</span>':''}
           </div>
-          <!-- 2行目：車名＋色 -->
+          <!-- 2行目：車名＋色＋補足テキスト -->
           <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;cursor:pointer" onclick="openStockDetail('${v.id}')">
             <span style="font-size:18px;font-weight:700;color:var(--text)">${v.name||'不明'}</span>
             ${v.color?`<span style="font-size:18px;font-weight:700;color:#fff">${toFullWidth(v.color)}</span>`:''}
+            ${v.displayNote?`<span style="font-size:13px;color:var(--text2);font-weight:500">${v.displayNote}</span>`:''}
           </div>
           <!-- 3行目：仕入日・仕入先・仕入金額 -->
           <div style="font-size:11px;color:var(--text2);margin-top:3px;cursor:pointer" onclick="openStockDetail('${v.id}')">
@@ -1028,6 +1032,11 @@ window.openStockDetail=function(id){
     <p class="lbl">ステータス①（場所・進捗）</p><select id="sd-s1">${s1opts}</select>
     <p class="lbl">ステータス②（点検）</p><select id="sd-s2" style="margin-bottom:4px">${s2opts}</select>
     ${finishSection}${lbBtns}
+    <p class="lbl">色を修正（デバッグ）</p>
+    <input type="text" id="sd-color" value="${v.color||''}" placeholder="例：シロ、パールホワイト" style="margin-bottom:2px">
+    <p style="font-size:10px;color:var(--text3);margin-bottom:6px">※CSV取込の色が違う場合のみ使用</p>
+    <p class="lbl">色の補足テキスト（一覧に表示）</p>
+    <input type="text" id="sd-display-note" value="${v.displayNote||''}" placeholder="例：ツートン、マット塗装など" style="margin-bottom:4px">
     <p class="lbl">メモ</p><textarea id="sd-memo" rows="2" style="margin-bottom:10px">${v.memo||''}</textarea>
     ${ins.length?`<p class="lbl">点検シート（${ins.length}件）</p>
     <div class="photo-grid" style="margin-bottom:10px">${ins.map(i=>`<div class="photo-card" style="position:relative">
@@ -1054,7 +1063,9 @@ window.saveSD=async function(id){
   const upd={
     status1:newS1,
     status2:document.getElementById('sd-s2').value,
-    memo:document.getElementById('sd-memo').value
+    memo:document.getElementById('sd-memo').value,
+    color:document.getElementById('sd-color').value.trim()||v.color||'',
+    displayNote:document.getElementById('sd-display-note').value.trim(),
   };
   if(newS1==='sold'){
     upd.cleaned  =document.getElementById('sd-cleaned')?.checked||false;
