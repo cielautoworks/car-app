@@ -770,8 +770,8 @@ window.renderStock=function(){
       }
     }
     // 要整備の場合は整備完了ボタンを追加（未点検かどうか問わず）
-    if(s2==='ng'){
-      btnsHtml+=`<button class="action-btn action-btn-maint ${maintCls}" onclick="quickAction(event,'${v.id}','maintain')">整備<br>${v.maintained?'済':'完了'}</button>`;
+   if(s2!=='none'&&s2!=='skip'&&s1!=='sold'){
+    btnsHtml+=`<button class="action-btn action-btn-maint ${maintCls}" onclick="quickAction(event,'${v.id}','maintain')">整備<br>完了</button>`;
     }
     // 部品注文ありは常に表示
     if(v.needsParts){
