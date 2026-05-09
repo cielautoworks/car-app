@@ -168,7 +168,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.04</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.05</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -979,10 +979,13 @@ window.applyBulk=async function(){
     }
   }
   await Promise.all(promises);
-  // チェックボックスをリセット
+  // チェックボックスを完全リセット（内部状態・DOM両方）
   checkedIds.clear();
   document.getElementById('bulk-action').value='';
   document.getElementById('chk-all').checked=false;
+  document.getElementById('chk-count').textContent='0件選択';
+  // renderStockを呼んでDOM上のチェックを確実に消す
+  renderStock();
   hideLoading();
 };
 
