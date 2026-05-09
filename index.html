@@ -8,117 +8,152 @@
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   :root{
-    --bg:#F4F4F2;--surface:#FFF;--surface2:#F0EFF0;
-    --border:#E2E1DF;--border2:#D0CFC9;
-    --text:#1A1A1A;--text2:#6B6B6B;--text3:#9B9B9B;
-    --green:#1A6B45;--green-bg:#E6F4EC;
-    --amber:#7C4A00;--amber-bg:#FEF3DC;
-    --red:#9B1C1C;--red-bg:#FEE9E9;
-    --blue:#0C3D8A;--blue-bg:#E8F0FB;
-    --purple:#3D2E8A;--purple-bg:#EEECFB;
-    --orange:#8A3D0C;--orange-bg:#FBF0E8;
-    --gray:#4B4B4B;--gray-bg:#EFEFEF;
-    --accent:#1A6B45;
+    /* ダークモード */
+    --bg:#0F1117;--surface:#1C1F2A;--surface2:#252836;--surface3:#2E3244;
+    --border:#383C4E;--border2:#464B60;
+    --text:#E8EAF0;--text2:#A0A8C0;--text3:#606880;
+    /* ビビッドカラー */
+    --green:#00E676;--green-bg:#003320;--green-dim:#00C853;
+    --amber:#FFB300;--amber-bg:#2C2000;
+    --red:#FF1744;--red-bg:#2C0010;
+    --blue:#448AFF;--blue-bg:#001A40;
+    --cyan:#00E5FF;--cyan-bg:#001A20;
+    --orange:#FF6D00;--orange-bg:#2C1500;
+    --purple:#D500F9;--purple-bg:#1A0025;
+    --gray:#78909C;--gray-bg:#1A2030;
+    --pink:#FF4081;--pink-bg:#2C0018;
+    --accent:#00E676;
     --radius:10px;--radius-sm:7px;
-    --shadow:0 1px 4px rgba(0,0,0,0.08);
+    --shadow:0 2px 8px rgba(0,0,0,0.4);
   }
   body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
   .app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
   .header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
-  .header-title{font-size:15px;font-weight:700}
+  .header-title{font-size:15px;font-weight:700;color:var(--accent)}
   .header-sub{font-size:10px;color:var(--text3);margin-top:1px}
-  .sync-badge{font-size:10px;padding:3px 8px;border-radius:20px;background:var(--green-bg);color:var(--green);font-weight:500}
+  .sync-badge{font-size:10px;padding:3px 8px;border-radius:20px;background:var(--green-bg);color:var(--green);font-weight:700}
   .sync-badge.error{background:var(--red-bg);color:var(--red)}
   .sync-badge.saving{background:var(--amber-bg);color:var(--amber)}
   .sync-badge.connecting{background:var(--blue-bg);color:var(--blue)}
   .tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:53px;z-index:49}
   .tab{flex:1;padding:10px 4px;text-align:center;font-size:12px;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;font-weight:500;transition:all .15s}
-  .tab.active{color:var(--text);border-bottom-color:var(--accent)}
-  .content{padding:12px;flex:1}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .content{padding:10px;flex:1}
   .hidden{display:none!important}
-  .card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:12px;margin-bottom:10px;box-shadow:var(--shadow)}
-  .item-row{display:flex;align-items:flex-start;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);gap:8px}
+  .card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:12px;margin-bottom:8px;box-shadow:var(--shadow)}
+  .item-row{display:flex;align-items:flex-start;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);gap:6px}
   .item-row:last-child{border-bottom:none}
-  .btn{display:inline-flex;align-items:center;justify-content:center;padding:7px 12px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:var(--surface);cursor:pointer;font-size:12px;font-family:inherit;color:var(--text);gap:4px;white-space:nowrap;font-weight:500;transition:opacity .1s}
-  .btn:active{opacity:.7}
-  .btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn{display:inline-flex;align-items:center;justify-content:center;padding:7px 12px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:var(--surface2);cursor:pointer;font-size:12px;font-family:inherit;color:var(--text);gap:4px;white-space:nowrap;font-weight:500;transition:all .1s}
+  .btn:active{opacity:.7;transform:scale(.97)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700}
   .btn-sm{padding:4px 9px;font-size:11px}
   .btn-xs{padding:3px 7px;font-size:10px}
-  .btn-danger{background:var(--red-bg);border-color:#fca5a5;color:var(--red)}
-  .btn-success{background:var(--green);border-color:var(--green);color:#fff}
-  .btn-amber{background:var(--amber);border-color:var(--amber);color:#fff}
-  .btn-blue{background:var(--blue);border-color:var(--blue);color:#fff}
-  .btn-orange{background:var(--orange-bg);border-color:#d97706;color:var(--orange)}
-  .btn-gray{background:var(--gray-bg);border-color:var(--border2);color:var(--gray)}
-  .badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
-  .b-av{background:var(--green-bg);color:var(--green)}
-  .b-rv{background:var(--amber-bg);color:var(--amber)}
-  .b-out{background:var(--red-bg);color:var(--red)}
-  .b-undelivered{background:#F3F0FF;color:#4C1D95}
-  .b-floor{background:var(--green-bg);color:var(--green)}
-  .b-loaner-badge{background:var(--amber-bg);color:var(--amber)}
-  .b-rental-badge{background:#FFF0E0;color:#7C3A00}
-  .b-listing{background:var(--blue-bg);color:var(--blue)}
-  .b-sold{background:var(--red-bg);color:var(--red)}
-  .b-delivered{background:var(--gray-bg);color:var(--gray)}
-  .b-insp-none{background:var(--red-bg);color:var(--red)}
-  .b-insp-ng{background:var(--orange-bg);color:var(--orange)}
-  .b-insp-ok{background:var(--blue-bg);color:var(--blue)}
-  .b-insp-skip{background:var(--gray-bg);color:var(--gray)}
-  .b-loan-tag{background:#FFF0E0;color:#7C3A00;border:1px solid #F5C58A}
-  /* 代車統計 */
-  .loaner-section{margin-bottom:14px}
-  .section-header{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border)}
-  .avail-box{border-radius:var(--radius);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-  .avail-box-loaner{background:var(--green-bg)}
-  .avail-box-rental{background:var(--blue-bg)}
-  .avail-num{font-size:36px;font-weight:700;line-height:1}
-  .avail-lbl{font-size:11px;font-weight:500;margin-top:2px}
-  .avail-sub{font-size:11px;color:var(--text2);text-align:right}
-  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-  .stat{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:10px;text-align:center;box-shadow:var(--shadow)}
-  .stat-n{font-size:22px;font-weight:700}
-  .stat-l{font-size:10px;color:var(--text3);margin-top:2px}
-  input[type=text],select,textarea{width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:13px;font-family:inherit;outline:none}
+  .btn-danger{background:var(--red-bg);border-color:var(--red);color:var(--red)}
+  .btn-success{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+  .btn-amber{background:var(--amber-bg);border-color:var(--amber);color:var(--amber)}
+  .btn-blue{background:var(--blue-bg);border-color:var(--blue);color:var(--blue)}
+  .btn-orange{background:var(--orange-bg);border-color:var(--orange);color:var(--orange)}
+  .btn-gray{background:var(--gray-bg);border-color:var(--border2);color:var(--text2)}
+  .btn-cyan{background:var(--cyan-bg);border-color:var(--cyan);color:var(--cyan)}
+  .btn-purple{background:var(--purple-bg);border-color:var(--purple);color:var(--purple)}
+  /* 完了状態のトグルボタン */
+  .btn-done{background:#003320;border-color:var(--green);color:var(--green);font-weight:700}
+  /* ビビッドバッジ - サイズアップ */
+  .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;letter-spacing:.02em}
+  .b-undelivered{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple)}
+  .b-floor{background:var(--green-bg);color:var(--green);border:1px solid var(--green)}
+  .b-loaner-badge{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber)}
+  .b-rental-badge{background:var(--cyan-bg);color:var(--cyan);border:1px solid var(--cyan)}
+  .b-listing{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue)}
+  .b-sold{background:var(--red-bg);color:var(--red);border:1px solid var(--red)}
+  .b-delivered{background:var(--gray-bg);color:var(--gray);border:1px solid var(--gray)}
+  .b-av{background:var(--green-bg);color:var(--green);border:1px solid var(--green)}
+  .b-rv{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber)}
+  .b-out{background:var(--red-bg);color:var(--red);border:1px solid var(--red)}
+  /* 点検バッジ ビビッド */
+  .b-insp-none{background:var(--red-bg);color:var(--red);border:1px solid var(--red)}
+  .b-insp-ng{background:var(--orange-bg);color:var(--orange);border:1px solid var(--orange)}
+  .b-insp-ok{background:var(--cyan-bg);color:var(--cyan);border:1px solid var(--cyan)}
+  .b-insp-skip{background:var(--gray-bg);color:var(--gray);border:1px solid var(--gray)}
+  .b-loan-tag{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber)}
+  /* 部品注文バッジ */
+  .b-parts{background:var(--pink-bg);color:var(--pink);border:2px solid var(--pink);animation:pulse 1.5s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+  /* 統計 */
+  .stats5{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:10px}
+  .stat{background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);padding:8px 4px;text-align:center}
+  .stat-n{font-size:20px;font-weight:700}
+  .stat-l{font-size:9px;color:var(--text3);margin-top:2px}
+  /* 代車空き表示 */
+  .avail-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+  .avail-box{border-radius:var(--radius);padding:12px;text-align:center;border:1px solid var(--border)}
+  .avail-box-loaner{background:var(--green-bg);border-color:var(--green)}
+  .avail-box-rental{background:var(--cyan-bg);border-color:var(--cyan)}
+  .avail-num{font-size:40px;font-weight:700;line-height:1}
+  .avail-lbl{font-size:11px;font-weight:700;margin-top:3px}
+  .stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+  input[type=text],select,textarea{width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-size:13px;font-family:inherit;outline:none}
   input:focus,select:focus,textarea:focus{border-color:var(--accent)}
   .lbl{font-size:11px;color:var(--text2);margin-bottom:4px;margin-top:10px;font-weight:700}
   .lbl:first-child{margin-top:0}
-  .modal-wrap{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;display:none;align-items:flex-end}
+  .modal-wrap{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:none;align-items:flex-end}
   .modal-wrap.open{display:flex}
-  .modal-box{background:var(--surface);border-radius:18px 18px 0 0;padding:16px;width:100%;max-height:92vh;overflow-y:auto}
-  .modal-title{font-size:15px;font-weight:700;margin-bottom:12px}
+  .modal-box{background:var(--surface);border-radius:18px 18px 0 0;padding:16px;width:100%;max-height:92vh;overflow-y:auto;border-top:1px solid var(--border)}
+  .modal-title{font-size:15px;font-weight:700;margin-bottom:12px;color:var(--text)}
   .modal-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 14px}
-  .full-wrap{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:300;display:none;align-items:center;justify-content:center;flex-direction:column;padding:16px}
+  /* 画像拡大 */
+  .full-wrap{position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:300;display:none;flex-direction:column;align-items:center;justify-content:center;padding:16px}
   .full-wrap.open{display:flex}
-  .full-wrap img{max-width:100%;max-height:68vh;border-radius:10px;object-fit:contain}
-  .close-x{position:absolute;top:16px;right:16px;color:#fff;font-size:16px;cursor:pointer;background:rgba(255,255,255,0.15);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center}
-  /* 点検シートグリッド */
+  .full-wrap img{max-width:100%;max-height:56vh;border-radius:10px;object-fit:contain}
+  .close-x{position:absolute;top:16px;right:16px;color:#fff;font-size:16px;cursor:pointer;background:rgba(255,255,255,0.15);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+  .full-btns{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center}
+  .full-btns .btn{padding:10px 16px;font-size:13px;flex-direction:column;gap:2px;min-width:72px;line-height:1.2}
+  /* 点検シート */
   .photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .photo-card{background:var(--surface2);border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border);position:relative}
   .photo-card.checked{border-color:var(--red);border-width:2px}
   .photo-card img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;cursor:pointer}
   .photo-info{padding:5px 7px}
   .photo-chk{position:absolute;top:6px;left:6px;width:20px;height:20px;accent-color:var(--red);cursor:pointer}
+  /* 検索バー */
   .search-row{display:flex;gap:6px;margin-bottom:8px}
   .search-row input{flex:1}
-  .search-row select{width:auto;min-width:80px}
-  .dtable{width:100%;font-size:12px;border-collapse:collapse;margin-bottom:10px}
-  .dtable td{padding:5px 0;vertical-align:top;border-bottom:1px solid var(--border)}
-  .dtable td:first-child{color:var(--text2);width:90px;padding-right:8px}
-  .dtable tr:last-child td{border-bottom:none}
-  .bulk-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;box-shadow:var(--shadow)}
+  .search-row select{width:auto;min-width:78px}
+  /* 一括バー */
+  .bulk-bar{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
   .bulk-bar select{width:auto;flex:1;min-width:100px}
   input[type=checkbox]{width:18px;height:18px;cursor:pointer;accent-color:var(--accent);flex-shrink:0}
-  .stock-item{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:10px;margin-bottom:8px;box-shadow:var(--shadow);display:flex;gap:8px;align-items:flex-start}
-  .stock-item.checked{border-color:var(--accent);background:#f0faf4}
-  .stock-item-body{flex:1;min-width:0}
-  .action-btns{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}
-  .individual-select{font-size:11px;padding:3px 5px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-family:inherit;cursor:pointer}
-  .spinner-wrap{position:fixed;inset:0;background:rgba(255,255,255,0.88);z-index:400;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px}
+  /* 在庫カード */
+  .stock-item{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:10px;margin-bottom:8px;box-shadow:var(--shadow)}
+  .stock-item.checked{border-color:var(--accent)}
+  .stock-item-row{display:flex;gap:8px;align-items:flex-start}
+  .stock-item-main{flex:1;min-width:0}
+  .stock-item-btns{display:flex;flex-direction:column;gap:5px;flex-shrink:0;min-width:70px}
+  /* アクションボタン：正方形・横並び、完了は薄くなる */
+  .action-btns-row{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+  .action-btn{display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:var(--radius-sm);border:1.5px solid;cursor:pointer;font-size:12px;font-weight:700;text-align:center;font-family:inherit;transition:all .15s;flex-direction:column;line-height:1.3;padding:4px}
+  .action-btn:active{transform:scale(.93)}
+  /* 未完了：鮮やか */
+  .action-btn-clean{background:var(--surface2);border-color:var(--green);color:var(--green)}
+  .action-btn-photo{background:var(--surface2);border-color:var(--blue);color:var(--blue)}
+  .action-btn-maint{background:var(--surface2);border-color:var(--orange);color:var(--orange)}
+  /* 完了：薄く（再タップで戻る） */
+  .action-btn-clean.done{background:var(--surface3);border-color:var(--border2);color:var(--text3);opacity:0.45}
+  .action-btn-photo.done{background:var(--surface3);border-color:var(--border2);color:var(--text3);opacity:0.45}
+  .action-btn-maint.done{background:var(--surface3);border-color:var(--border2);color:var(--text3);opacity:0.45}
+  /* 部品注文：常に点滅 */
+  .action-btn-parts{background:var(--pink-bg);border-color:var(--pink);color:var(--pink);animation:pulse 1.5s infinite}
+  .individual-select{font-size:11px;padding:3px 5px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-family:inherit;cursor:pointer}
+  .dtable{width:100%;font-size:12px;border-collapse:collapse;margin-bottom:10px}
+  .dtable td{padding:5px 0;vertical-align:top;border-bottom:1px solid var(--border)}
+  .dtable td:first-child{color:var(--text2);width:80px;padding-right:8px}
+  .dtable tr:last-child td{border-bottom:none}
+  .insp-bulk-bar{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .spinner-wrap{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:400;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px}
   .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
-  .days-badge{display:inline-block;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:700;background:#FFF0E0;color:#7C3A00;margin-left:3px}
-  .insp-bulk-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;box-shadow:var(--shadow)}
+  .days-badge{display:inline-block;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:700;background:var(--amber-bg);color:var(--amber);margin-left:3px;border:1px solid var(--amber)}
+  .section-header{font-size:11px;font-weight:700;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em}
 </style>
 </head>
 <body>
@@ -130,9 +165,9 @@
 
 <div class="app">
   <div class="header">
-    <div>
-      <div class="header-title">🚗 中古車管理</div>
-      <div class="header-sub">ciel autoworks</div>
+    <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
+      <div class="header-title">🚗 ciel autoworks</div>
+      <div class="header-sub">中古車管理システム</div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -142,48 +177,35 @@
     <div class="tab" onclick="switchTab('inspection')">点検シート</div>
   </div>
 
-  <!-- 代車タブ -->
+  <!-- 代車/レンタタブ -->
   <div id="tab-loaner" class="content">
-    <!-- 代車セクション -->
-    <div class="loaner-section">
-      <div class="section-header">🚗 代車</div>
+    <!-- 空き台数：左右2分割 -->
+    <div class="avail-row">
       <div class="avail-box avail-box-loaner">
-        <div>
-          <div class="avail-num" style="color:var(--green)" id="loaner-avail-n">0</div>
-          <div class="avail-lbl" style="color:var(--green)">台 空き</div>
-        </div>
-        <div class="avail-sub" id="loaner-avail-sub"></div>
+        <div class="avail-num" style="color:var(--green)" id="loaner-avail-n">0</div>
+        <div class="avail-lbl" style="color:var(--green)">代車 空き</div>
       </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <span style="font-size:12px;font-weight:700">一覧</span>
-        <div style="display:flex;gap:5px">
-          <button class="btn btn-sm btn-gray" onclick="openAddFromStock('loaner')">販売車から追加</button>
-          <button class="btn btn-sm" onclick="openAddCar('loaner')">＋ 追加</button>
-        </div>
-      </div>
-      <div class="card" id="loaner-list"></div>
-    </div>
-
-    <!-- レンタカーセクション -->
-    <div class="loaner-section">
-      <div class="section-header">🔑 レンタカー</div>
       <div class="avail-box avail-box-rental">
-        <div>
-          <div class="avail-num" style="color:var(--blue)" id="rental-avail-n">0</div>
-          <div class="avail-lbl" style="color:var(--blue)">台 空き</div>
-        </div>
-        <div class="avail-sub" id="rental-avail-sub"></div>
+        <div class="avail-num" style="color:var(--cyan)" id="rental-avail-n">0</div>
+        <div class="avail-lbl" style="color:var(--cyan)">レンタカー 空き</div>
       </div>
-      <!-- 合算統計 -->
-      <div class="stats" id="combined-stats"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <span style="font-size:12px;font-weight:700">一覧</span>
-        <div style="display:flex;gap:5px">
-          <button class="btn btn-sm btn-gray" onclick="openAddFromStock('rental')">販売車から追加</button>
-          <button class="btn btn-sm" onclick="openAddCar('rental')">＋ 追加</button>
-        </div>
+    </div>
+    <!-- 合算統計 -->
+    <div class="stats3" id="loaner-combined-stats"></div>
+    <!-- 一覧 -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-size:12px;font-weight:700;color:var(--text2)">一覧</span>
+      <div style="display:flex;gap:5px">
+        <button class="btn btn-sm btn-gray" onclick="openAddFromStock('loaner')">販売車から追加</button>
+        <button class="btn btn-sm btn-success" onclick="openAddCar('loaner')">＋ 代車</button>
+        <button class="btn btn-sm btn-cyan" onclick="openAddCar('rental')">＋ レンタ</button>
       </div>
-      <div class="card" id="rental-list"></div>
+    </div>
+    <div class="card" id="loaner-list"></div>
+    <!-- デバッグパネル（ヘッダー長押しで表示） -->
+    <div id="debug-panel" style="display:none;background:#1a0a0a;border:1px solid var(--red);border-radius:var(--radius);padding:10px;margin-top:8px">
+      <div style="color:var(--red);font-size:11px;font-weight:700;margin-bottom:6px">⚠️ 非表示車両（carTypeなし）</div>
+      <div id="debug-car-list"></div>
     </div>
   </div>
 
@@ -194,7 +216,9 @@
       <input type="file" id="csv-input" accept=".csv,.CSV" style="display:none" onchange="importCSV(event)">
       <span style="font-size:11px;color:var(--text3)" id="csv-count"></span>
     </div>
-    <div class="stats" id="stock-stats"></div>
+    <!-- 統計5項目 -->
+    <div class="stats5" id="stock-stats"></div>
+    <!-- 一括操作 -->
     <div class="bulk-bar">
       <input type="checkbox" id="chk-all" onchange="toggleAll(this.checked)" title="全選択">
       <span style="font-size:11px;color:var(--text2)" id="chk-count">0件選択</span>
@@ -212,7 +236,7 @@
         <optgroup label="▼ステータス②">
           <option value="s2_none">未点検</option>
           <option value="s2_ng">点検済(要整備)</option>
-          <option value="s2_ok">点検済(異常なし)</option>
+          <option value="s2_ok">点検済</option>
           <option value="s2_skip">点検不要</option>
         </optgroup>
         <optgroup label="▼その他">
@@ -222,7 +246,7 @@
       <button class="btn btn-sm btn-primary" onclick="applyBulk()">実行</button>
     </div>
     <div class="search-row">
-      <input type="text" id="stock-search" placeholder="車名・色・仕入先など..." oninput="renderStock()">
+      <input type="text" id="stock-search" placeholder="車名・色・仕入先など部分一致..." oninput="renderStock()">
       <select id="stock-filter" onchange="renderStock()" style="font-size:11px">
         <option value="">すべて</option>
         <optgroup label="ステータス①">
@@ -240,6 +264,9 @@
           <option value="s2_ok">点検済</option>
           <option value="s2_skip">点検不要</option>
         </optgroup>
+        <optgroup label="その他">
+          <option value="parts">部品待ち</option>
+        </optgroup>
       </select>
     </div>
     <div id="stock-list"></div>
@@ -251,11 +278,11 @@
       <span style="font-size:13px;font-weight:700">点検シート</span>
       <button class="btn btn-sm btn-primary" onclick="openUpload()">＋ アップロード</button>
     </div>
-    <div class="insp-bulk-bar" id="insp-bulk-bar">
+    <div class="insp-bulk-bar">
       <input type="checkbox" id="insp-chk-all" onchange="toggleInspAll(this.checked)">
       <span style="font-size:11px;color:var(--text2)" id="insp-chk-count">0件選択</span>
       <div style="margin-left:auto;display:flex;gap:5px">
-        <button class="btn btn-sm btn-gray" onclick="unlinkCheckedInsp()" title="車両との紐付けを解除（写真は残る）">紐付解除</button>
+        <button class="btn btn-sm btn-gray" onclick="unlinkCheckedInsp()">紐付解除</button>
         <button class="btn btn-sm btn-danger" onclick="deleteCheckedInsp()">削除</button>
       </div>
     </div>
@@ -287,15 +314,33 @@
 <div class="modal-wrap" id="modal-upload">
   <div class="modal-box"><div class="modal-handle"></div>
     <p class="modal-title">点検シートアップロード</p>
-    <p class="lbl">車両を選択（任意）</p><select id="up-vehicle"></select>
-    <p class="lbl">または車種名を直接入力</p><input type="text" id="up-name" placeholder="例：トヨタ プリウス">
-    <p class="lbl">メモ（任意）</p><input type="text" id="up-memo" placeholder="例：オイル漏れあり">
-    <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px;background:var(--red-bg);border-radius:var(--radius-sm)">
-      <input type="checkbox" id="up-repair" style="width:20px;height:20px;accent-color:var(--red)">
-      <label for="up-repair" style="font-size:13px;font-weight:700;color:var(--red);cursor:pointer">⚠️ 要整備あり</label>
+    <!-- 選択済み車両タグ -->
+    <div id="selected-vehicle-tag" style="display:none;background:var(--green-bg);border:1px solid var(--green);border-radius:var(--radius-sm);padding:6px 10px;font-size:12px;color:var(--text);margin-bottom:6px;flex-direction:row;align-items:center;justify-content:space-between">
+      <span id="selected-vehicle-name"></span>
+      <span onclick="clearVehicleSelect()" style="cursor:pointer;font-size:16px;line-height:1;margin-left:8px">✕</span>
+    </div>
+    <!-- 絞り込みプルダウン（店頭在庫×未点検） -->
+    <div id="quick-select-wrap">
+      <p class="lbl">店頭在庫・未点検から選択（仕入日新しい順）</p>
+      <select id="up-vehicle-quick" onchange="selectVehicleFromQuick(this.value)" style="margin-bottom:8px">
+        <option value="">-- 絞り込みリストから選択 --</option>
+      </select>
+    </div>
+    <!-- 全車検索 -->
+    <p class="lbl">または全車から検索</p>
+    <input type="text" id="up-vehicle-search" placeholder="車名・色・車台番号で検索..." oninput="searchVehicles(this.value)" style="margin-bottom:2px">
+    <div id="vehicle-search-results" style="display:none;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);max-height:180px;overflow-y:auto;margin-bottom:6px"></div>
+    <input type="hidden" id="up-vehicle-id">
+    <p class="lbl">車種名を直接入力（車両未選択の場合）</p>
+    <input type="text" id="up-name" placeholder="例：トヨタ プリウス">
+    <p class="lbl">メモ（任意）</p>
+    <input type="text" id="up-memo" placeholder="例：オイル漏れあり">
+    <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px;background:var(--pink-bg);border-radius:var(--radius-sm);border:1px solid var(--pink)">
+      <input type="checkbox" id="up-parts" style="width:20px;height:20px;accent-color:var(--pink)">
+      <label for="up-parts" style="font-size:14px;font-weight:700;color:var(--text);cursor:pointer">🔩 部品注文あり</label>
     </div>
     <p class="lbl">写真</p>
-    <div style="border:2px dashed var(--border2);border-radius:var(--radius-sm);padding:16px;text-align:center;cursor:pointer;color:var(--text3)" onclick="document.getElementById('file-input').click()">
+    <div style="border:2px dashed var(--border2);border-radius:var(--radius-sm);padding:16px;text-align:center;cursor:pointer;color:var(--text3);background:var(--surface2)" onclick="document.getElementById('file-input').click()">
       <div id="up-preview"><div style="font-size:24px">📷</div><p style="font-size:13px">タップして写真を選択</p></div>
     </div>
     <input type="file" id="file-input" accept="image/*" style="display:none" onchange="previewPhoto(event)">
@@ -307,13 +352,16 @@
   </div>
 </div>
 <div class="modal-wrap" id="modal-stock-detail"><div class="modal-box"><div class="modal-handle"></div><p class="modal-title" id="sd-title"></p><div id="sd-body"></div></div></div>
+
+<!-- 画像拡大表示 -->
 <div class="full-wrap" id="full-img">
   <div class="close-x" onclick="closeFullImg()">✕</div>
   <img id="full-img-el" src="">
-  <div style="color:#fff;margin-top:12px;text-align:center">
-    <p id="full-img-name" style="font-size:14px;font-weight:700"></p>
-    <p id="full-img-meta" style="font-size:11px;opacity:0.65;margin-top:3px"></p>
+  <div style="color:#fff;margin-top:8px;text-align:center">
+    <p id="full-img-name" style="font-size:13px;font-weight:700"></p>
+    <p id="full-img-meta" style="font-size:11px;opacity:0.65;margin-top:2px"></p>
   </div>
+  <div class="full-btns" id="full-btns"></div>
 </div>
 
 <script type="module">
@@ -333,8 +381,7 @@ const firebaseConfig = {
 const fbApp = initializeApp(firebaseConfig);
 const db    = getDatabase(fbApp);
 
-// ===== 定数 =====
-const S1 = {
+const S1={
   undelivered:{label:'店頭未着', cls:'b-undelivered'},
   floor:      {label:'店頭在庫', cls:'b-floor'},
   loaner:     {label:'代車',     cls:'b-loaner-badge'},
@@ -343,46 +390,61 @@ const S1 = {
   sold:       {label:'販売済',   cls:'b-sold'},
   delivered:  {label:'納車完了', cls:'b-delivered'},
 };
-const S2 = {
-  none:{label:'未点検',       cls:'b-insp-none'},
-  ng:  {label:'点検済(要整備)',cls:'b-insp-ng'},
-  ok:  {label:'点検済(異常なし)',cls:'b-insp-ok'},
-  skip:{label:'点検不要',     cls:'b-insp-skip'},
+const S2={
+  none:{label:'未点検',         cls:'b-insp-none'},
+  ng:  {label:'点検済(要整備)', cls:'b-insp-ng'},
+  ok:  {label:'点検済',         cls:'b-insp-ok'},
+  skip:{label:'点検不要',       cls:'b-insp-skip'},
 };
 
-let cars={}, stock={}, inspections={};
-let uploadDataUrl=null, selectedCarId=null, addCarType='loaner';
-let checkedIds=new Set(), inspCheckedIds=new Set();
+let cars={},stock={},inspections={};
+let uploadDataUrl=null,selectedCarId=null,addCarType='loaner';
+let checkedIds=new Set(),inspCheckedIds=new Set();
+let fullImgInspId=null;
 let ready=false;
 
-function today(){ return new Date().toLocaleDateString('ja-JP',{month:'2-digit',day:'2-digit'}); }
-function nowTs(){ return Date.now(); }
-function fmt(n){ return n?Number(n).toLocaleString():'0'; }
-function uid(){ return 'i'+nowTs()+Math.random().toString(36).slice(2,6); }
-function daysSince(ts){ return ts?Math.floor((Date.now()-ts)/86400000):null; }
+function today(){return new Date().toLocaleDateString('ja-JP',{month:'2-digit',day:'2-digit'});}
+function nowTs(){return Date.now();}
+function fmt(n){return n?Number(n).toLocaleString():'';}
+function uid(){return 'i'+nowTs()+Math.random().toString(36).slice(2,6);}
+function daysSince(ts){return ts?Math.floor((Date.now()-ts)/86400000):null;}
+
+// 西暦→和暦変換
+function toJapaneseYear(dateStr){
+  if(!dateStr)return '';
+  const m=dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(!m)return dateStr;
+  const y=parseInt(m[1]),mo=parseInt(m[2]);
+  let era='',yr=0;
+  if(y>2018||(y===2018&&mo>=5)){era='令和';yr=y-2018;}
+  else if(y>1988||(y===1988&&mo>=1)){era='平成';yr=y-1988;}
+  else if(y>1925){era='昭和';yr=y-1925;}
+  else{return dateStr;}
+  return `${era}${yr}年${m[2]}月`;
+}
 
 function setSyncSt(t,s='ok'){
   const el=document.getElementById('sync-st');
   el.textContent=t;
   el.className='sync-badge'+(s==='error'?' error':s==='saving'?' saving':s==='connecting'?' connecting':'');
 }
-function showLoading(msg){ document.getElementById('loading-msg').textContent=msg||'処理中...'; document.getElementById('loading').style.display='flex'; }
-function hideLoading(){ document.getElementById('loading').style.display='none'; }
+function showLoading(msg){document.getElementById('loading-msg').textContent=msg||'処理中...';document.getElementById('loading').style.display='flex';}
+function hideLoading(){document.getElementById('loading').style.display='none';}
 
 function startListeners(){
-  onValue(ref(db,'.info/connected'), snap=>{
-    if(snap.val()){ setSyncSt('● 同期中','ok'); if(!ready){ready=true;hideLoading();} }
+  onValue(ref(db,'.info/connected'),snap=>{
+    if(snap.val()){setSyncSt('● 同期中','ok');if(!ready){ready=true;hideLoading();}}
     else setSyncSt('● 再接続中...','connecting');
   });
-  onValue(ref(db,'cars'),        snap=>{ cars=snap.val()||{};        renderLoaner(); });
-  onValue(ref(db,'stock'),       snap=>{ stock=snap.val()||{};       renderStockStats(); renderStock(); updateCsvCount(); });
-  onValue(ref(db,'inspections'), snap=>{ inspections=snap.val()||{}; renderInspections(); });
+  onValue(ref(db,'cars'),        snap=>{cars=snap.val()||{};       renderLoaner();});
+  onValue(ref(db,'stock'),       snap=>{stock=snap.val()||{};      renderStockStats();renderStock();updateCsvCount();});
+  onValue(ref(db,'inspections'), snap=>{inspections=snap.val()||{};renderInspections();});
 }
 
-async function dbSet(p,d){ setSyncSt('● 保存中...','saving'); await set(ref(db,p),d); }
-async function dbUpd(p,d){ setSyncSt('● 保存中...','saving'); await update(ref(db,p),d); }
-async function dbDel(p){   await remove(ref(db,p)); }
-function updateCsvCount(){ const n=Object.keys(stock).length; document.getElementById('csv-count').textContent=n?`全${n}台`:''; }
+async function dbSet(p,d){setSyncSt('● 保存中...','saving');await set(ref(db,p),d);}
+async function dbUpd(p,d){setSyncSt('● 保存中...','saving');await update(ref(db,p),d);}
+async function dbDel(p){await remove(ref(db,p));}
+function updateCsvCount(){const n=Object.keys(stock).length;document.getElementById('csv-count').textContent=n?`全${n}台`:'';};
 
 window.switchTab=function(tab){
   ['loaner','stock','inspection'].forEach(t=>document.getElementById('tab-'+t).classList.toggle('hidden',t!==tab));
@@ -391,64 +453,62 @@ window.switchTab=function(tab){
 window.openModal =id=>document.getElementById(id).classList.add('open');
 window.closeModal=id=>document.getElementById(id).classList.remove('open');
 
-// ===== 代車/レンタカー描画 =====
+// ===== 代車/レンタカー =====
 function renderLoaner(){
-  const loanerList = Object.values(cars).filter(c=>c.carType==='loaner').sort((a,b)=>(a.addedAt||0)-(b.addedAt||0));
-  const rentalList = Object.values(cars).filter(c=>c.carType==='rental').sort((a,b)=>(a.addedAt||0)-(b.addedAt||0));
+  const all=Object.values(cars);
+  const lList=all.filter(c=>c.carType==='loaner').sort((a,b)=>(a.addedAt||0)-(b.addedAt||0));
+  const rList=all.filter(c=>c.carType==='rental').sort((a,b)=>(a.addedAt||0)-(b.addedAt||0));
 
-  // 代車統計
-  const lAvail=loanerList.filter(c=>c.status==='available').length;
-  const lBusy =loanerList.filter(c=>c.status!=='available').length;
-  document.getElementById('loaner-avail-n').textContent=lAvail;
-  document.getElementById('loaner-avail-sub').innerHTML=`予約・貸出中<br><span style="font-size:18px;font-weight:700;color:var(--red)">${lBusy}</span>台`;
+  document.getElementById('loaner-avail-n').textContent=lList.filter(c=>c.status==='available').length;
+  document.getElementById('rental-avail-n').textContent=rList.filter(c=>c.status==='available').length;
 
-  // レンタカー統計
-  const rAvail=rentalList.filter(c=>c.status==='available').length;
-  const rBusy =rentalList.filter(c=>c.status!=='available').length;
-  document.getElementById('rental-avail-n').textContent=rAvail;
-  document.getElementById('rental-avail-sub').innerHTML=`予約・貸出中<br><span style="font-size:18px;font-weight:700;color:var(--red)">${rBusy}</span>台`;
+  const allRes=all.filter(c=>c.status==='reserved').length;
+  const allOut=all.filter(c=>c.status==='out').length;
+  document.getElementById('loaner-combined-stats').innerHTML=`
+    <div class="stat"><div class="stat-n" style="color:var(--amber)">${allRes}</div><div class="stat-l">予約中</div></div>
+    <div class="stat"><div class="stat-n" style="color:var(--red)">${allOut}</div><div class="stat-l">貸出中</div></div>
+    <div class="stat"><div class="stat-n" style="color:var(--text2)">${all.length}</div><div class="stat-l">総台数</div></div>`;
 
-  // 合算統計（全台数合計）
-  const allList=Object.values(cars);
-  const allReserved=allList.filter(c=>c.status==='reserved').length;
-  const allOut     =allList.filter(c=>c.status==='out').length;
-  const allTotal   =allList.length;
-  document.getElementById('combined-stats').innerHTML=`
-    <div class="stat"><div class="stat-n" style="color:var(--amber)">${allReserved}</div><div class="stat-l">予約中（全体）</div></div>
-    <div class="stat"><div class="stat-n" style="color:var(--red)">${allOut}</div><div class="stat-l">貸出中（全体）</div></div>
-    <div class="stat"><div class="stat-n" style="color:var(--text2)">${allTotal}</div><div class="stat-l">総台数</div></div>`;
+  // 孤立車両（carTypeなし）をデバッグパネルに反映
+  const orphans=all.filter(c=>!c.carType);
+  const dbList=document.getElementById('debug-car-list');
+  if(dbList){
+    dbList.innerHTML=orphans.length
+      ? orphans.map(c=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px">
+          <span style="color:var(--text)">${c.name||'名称不明'} / ${c.plate||''}</span>
+          <button class="btn btn-sm btn-danger" onclick="forceDeleteCar('${c.id}')">削除</button>
+        </div>`).join('')
+      : '<p style="font-size:12px;color:var(--text3)">該当なし</p>';
+  }
 
-  // 代車リスト
-  const lEl=document.getElementById('loaner-list');
-  lEl.innerHTML=loanerList.length?loanerList.map(car=>carRowHTML(car)).join('')
-    :'<p style="text-align:center;color:var(--text3);padding:12px 0;font-size:12px">代車がありません</p>';
-  // レンタカーリスト
-  const rEl=document.getElementById('rental-list');
-  rEl.innerHTML=rentalList.length?rentalList.map(car=>carRowHTML(car)).join('')
-    :'<p style="text-align:center;color:var(--text3);padding:12px 0;font-size:12px">レンタカーがありません</p>';
+  const combined=[...lList,...rList];
+  const el=document.getElementById('loaner-list');
+  el.innerHTML=combined.length?combined.map(car=>carRowHTML(car)).join('')
+    :'<p style="text-align:center;color:var(--text3);padding:14px 0;font-size:12px">登録されていません</p>';
 }
 
 function carRowHTML(car){
+  const isRental=car.carType==='rental';
   let badge='',btns='';
   const days=daysSince(car.outTs);
-  const daysBadge=days!==null&&car.status==='out'?`<span class="days-badge">${days}日目</span>`:'';
+  const daysBadge=(days!==null&&car.status==='out')?`<span class="days-badge">${days}日</span>`:'';
   if(car.status==='available'){
-    badge='<span class="badge b-av">空き</span>';
+    badge=isRental?'<span class="badge b-rental-badge">レンタ空き</span>':'<span class="badge b-av">代車空き</span>';
     btns=`<button class="btn btn-sm btn-amber" onclick="openAction('${car.id}','reserve')">予約</button>
           <button class="btn btn-sm btn-primary" onclick="openAction('${car.id}','out')">貸出</button>`;
-  } else if(car.status==='reserved'){
-    badge='<span class="badge b-rv">予約</span>';
+  }else if(car.status==='reserved'){
+    badge='<span class="badge b-rv">予約中</span>';
     btns=`<button class="btn btn-sm btn-primary" onclick="openAction('${car.id}','out')">貸出</button>
           <button class="btn btn-sm" onclick="openAction('${car.id}','cancel')">取消</button>`;
-  } else {
-    badge=`<span class="badge b-out">使用中</span>${daysBadge}`;
+  }else{
+    badge=`<span class="badge b-out">貸出中</span>${daysBadge}`;
     btns=`<button class="btn btn-sm btn-success" onclick="openAction('${car.id}','return')">返却</button>`;
   }
   const fb=car.fromStock?'<span class="badge b-loan-tag" style="font-size:10px">販売車兼用</span>':'';
   const sub=car.borrower?` <span style="font-size:11px;color:var(--text3)">${car.borrower}</span>`:'';
   return`<div class="item-row">
     <div style="flex:1;min-width:0">
-      <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">${badge}${fb}<span style="font-weight:700">${car.name}</span></div>
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${badge}${fb}<span style="font-weight:700">${car.name}</span></div>
       <div style="font-size:11px;color:var(--text2);margin-top:2px">${car.plate||''}${sub}</div>
     </div>
     <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${btns}
@@ -482,7 +542,6 @@ window.openAction=function(carId,action){
   document.getElementById('ma-body').innerHTML=body;
   openModal('modal-action');
 };
-
 window.doAction=async function(action){
   const car={...cars[selectedCarId]};
   const b=document.getElementById('act-b');
@@ -490,15 +549,12 @@ window.doAction=async function(action){
   else if(action==='reserve'){car.status='reserved';car.borrower=(b?.value||'').trim()||'不明';}
   else if(action==='return'){car.status='available';car.borrower=null;car.since=null;car.outTs=null;}
   else if(action==='cancel'){car.status='available';car.borrower=null;}
-  await dbSet(`cars/${car.id}`,car);
-  closeModal('modal-action');
+  await dbSet(`cars/${car.id}`,car);closeModal('modal-action');
 };
-
 window.openAddCar=function(type){
   addCarType=type;
   document.getElementById('add-car-title').textContent=type==='rental'?'レンタカーを追加':'代車を追加';
-  document.getElementById('nc-name').value='';
-  document.getElementById('nc-plate').value='';
+  document.getElementById('nc-name').value='';document.getElementById('nc-plate').value='';
   openModal('modal-add-car');
 };
 window.addCar=async function(){
@@ -513,21 +569,20 @@ window.addCar=async function(){
 window.removeCar=async function(id){
   const car=cars[id];if(!car)return;
   if(!confirm(`「${car.name}」を削除しますか？`))return;
-  if(car.stockId&&stock[car.stockId]) await dbUpd(`stock/${car.stockId}`,{isLoaner:false});
+  if(car.stockId&&stock[car.stockId])await dbUpd(`stock/${car.stockId}`,{isLoaner:false});
   await dbDel(`cars/${id}`);
 };
-
 window.openAddFromStock=function(type){
   addCarType=type;
   document.getElementById('afs-title').textContent=type==='rental'?'販売車からレンタカーに追加':'販売車から代車に追加';
   const el=document.getElementById('stock-for-loaner-list');
-  const avail=Object.values(stock).filter(v=>!['delivered','sold'].includes(v.status1||'undelivered'));
+  const avail=Object.values(stock).filter(v=>!['delivered'].includes(v.status1||'undelivered'));
   if(!avail.length){el.innerHTML='<p style="text-align:center;color:var(--text3);padding:16px 0">対象の販売車がありません</p>';openModal('modal-add-from-stock');return;}
   el.innerHTML=avail.map(v=>{
     const already=Object.values(cars).some(c=>c.stockId===v.id);
     return`<div class="item-row" style="align-items:center">
       <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px">${v.name}</div>
-      <div style="font-size:11px;color:var(--text2)">${v.vin||''} ${v.color?'/ '+v.color:''}</div></div>
+      <div style="font-size:11px;color:var(--text2)">${v.vin||''} ${v.color?'🎨 '+v.color:''}</div></div>
       ${already?'<span class="badge b-loan-tag">登録済</span>':`<button class="btn btn-sm btn-blue" onclick="addFromStock('${v.id}')">追加</button>`}
     </div>`;
   }).join('');
@@ -536,8 +591,7 @@ window.openAddFromStock=function(type){
 window.addFromStock=async function(vid){
   const v=stock[vid];if(!v)return;
   if(Object.values(cars).some(c=>c.stockId===vid)){alert('すでに登録されています');return;}
-  const id=uid();
-  const newS1=addCarType==='rental'?'rental':'loaner';
+  const id=uid();const newS1=addCarType==='rental'?'rental':'loaner';
   await Promise.all([
     dbSet(`cars/${id}`,{id,name:v.name,plate:v.regNo||'未登録',status:'available',carType:addCarType,fromStock:true,stockId:vid,addedAt:nowTs()}),
     dbUpd(`stock/${vid}`,{isLoaner:true,status1:newS1})
@@ -547,21 +601,18 @@ window.addFromStock=async function(vid){
 window.addFromStockDirect=async function(vid,type){
   const v=stock[vid];if(!v)return;
   if(Object.values(cars).some(c=>c.stockId===vid)){alert('すでに代車登録されています');return;}
-  const id=uid();
-  const newS1=type==='rental'?'rental':'loaner';
+  const id=uid();const newS1=type==='rental'?'rental':'loaner';
   await Promise.all([
     dbSet(`cars/${id}`,{id,name:v.name,plate:v.regNo||'未登録',status:'available',carType:type||'loaner',fromStock:true,stockId:vid,addedAt:nowTs()}),
     dbUpd(`stock/${vid}`,{isLoaner:true,status1:newS1})
   ]);
-  closeModal('modal-stock-detail');
-  alert(`「${v.name}」を${type==='rental'?'レンタカー':'代車'}に追加しました`);
+  closeModal('modal-stock-detail');alert(`「${v.name}」を${type==='rental'?'レンタカー':'代車'}に追加しました`);
 };
 window.removeFromLoaner=async function(vid){
   const v=stock[vid];if(!v)return;
   const car=Object.values(cars).find(c=>c.stockId===vid);
   if(car){if(car.status==='out'){alert('貸出中のため外せません');return;}await dbDel(`cars/${car.id}`);}
-  await dbUpd(`stock/${vid}`,{isLoaner:false,status1:'floor'});
-  closeModal('modal-stock-detail');
+  await dbUpd(`stock/${vid}`,{isLoaner:false,status1:'floor'});closeModal('modal-stock-detail');
 };
 
 // ===== CSV =====
@@ -584,24 +635,21 @@ function parseCSV(text){
     date:fi('仕入日'),cdate:fi('契約日'),ddate:fi('納車日'),sdate:fi('売上日'),
     num:fi('車両仕入番号'),seiri:fi('車両整理番号','整理番号'),
     staff:fi('仕入担当名'),name:fi('車名'),sup:fi('仕入先名'),
-    color:fi('色'),vin:fi('車台番号'),type:fi('型式類別'),
-    year:fi('年式'),shaken:fi('車検期限'),equip:fi('装備品'),
-    price:fi('仕入金額'),total:fi('合計'),
+    color:fi('色'),vin:fi('車台番号'),year:fi('年式'),
+    shaken:fi('車検期限'),equip:fi('装備品'),price:fi('仕入金額'),total:fi('合計'),
   };
   const g=(row,i)=>i>=0&&i<row.length?row[i].replace(/^"|"$/g,'').trim():'';
   const existVins=new Set(Object.values(stock).map(v=>v.vin).filter(Boolean));
   const batch={};let added=0,skipped=0;
   for(let i=hi+1;i<lines.length;i++){
-    const row=parseLine(lines[i]);
-    if(!row||row.length<5)continue;
+    const row=parseLine(lines[i]);if(!row||row.length<5)continue;
     const first=g(row,0);
     if(!first||!/^(平成|令和|昭和|\d{4})/.test(first))continue;
     const vin=g(row,idx.vin);
     if(vin&&existVins.has(vin)){skipped++;continue;}
     const id=uid();
     const v={
-      id,
-      date:fmtDate(g(row,idx.date)),cdate:fmtDate(g(row,idx.cdate)),
+      id,date:fmtDate(g(row,idx.date)),cdate:fmtDate(g(row,idx.cdate)),
       ddate:fmtDate(g(row,idx.ddate)),sdate:fmtDate(g(row,idx.sdate)),
       num:g(row,idx.num),seiri:g(row,idx.seiri),staff:g(row,idx.staff),
       name:kana2full(g(row,idx.name)),sup:g(row,idx.sup),
@@ -610,7 +658,7 @@ function parseCSV(text){
       price:g(row,idx.price),total:g(row,idx.total),
       regNo:'',loc:'本社',
       status1:'undelivered',status2:'none',
-      cleaned:false,photographed:false,maintained:false,
+      cleaned:false,photographed:false,maintained:false,needsParts:false,
       memo:'',isLoaner:false,addedAt:nowTs()
     };
     if(v.name||v.vin){batch[id]=v;if(vin)existVins.add(vin);added++;}
@@ -655,34 +703,35 @@ function fmtDate(s){
   return s;
 }
 
-// ===== 販売車統計 =====
+// ===== 販売車統計（5項目）=====
 function renderStockStats(){
   const list=Object.values(stock);
-  const total=list.length;
+  const floor=list.filter(v=>(v.status1||'undelivered')==='floor').length;
+  const listing=list.filter(v=>(v.status1||'undelivered')==='listing').length;
   const uninsp=list.filter(v=>(v.status2||'none')==='none').length;
   const repair=list.filter(v=>(v.status2||'none')==='ng').length;
+  const sold=list.filter(v=>(v.status1||'undelivered')==='sold').length;
   document.getElementById('stock-stats').innerHTML=`
-    <div class="stat"><div class="stat-n" style="color:var(--blue)">${total}</div><div class="stat-l">総台数</div></div>
+    <div class="stat"><div class="stat-n" style="color:var(--green)">${floor}</div><div class="stat-l">在庫</div></div>
+    <div class="stat"><div class="stat-n" style="color:var(--blue)">${listing}</div><div class="stat-l">出品中</div></div>
     <div class="stat"><div class="stat-n" style="color:var(--red)">${uninsp}</div><div class="stat-l">未点検</div></div>
-    <div class="stat"><div class="stat-n" style="color:var(--orange)">${repair}</div><div class="stat-l">要整備</div></div>`;
+    <div class="stat"><div class="stat-n" style="color:var(--orange)">${repair}</div><div class="stat-l">要整備</div></div>
+    <div class="stat"><div class="stat-n" style="color:var(--pink)">${sold}</div><div class="stat-l">納車待ち</div></div>`;
 }
 
-// ===== 販売車一覧（部分一致検索・色・仕入先表示）=====
+// ===== 販売車一覧 =====
 window.renderStock=function(){
   const q=(document.getElementById('stock-search')?.value||'').toLowerCase();
   const f=document.getElementById('stock-filter')?.value||'';
-  // 仕入日新しい順
   let list=Object.values(stock).sort((a,b)=>{
     const da=a.date||'',db2=b.date||'';
-    if(da===db2)return (b.addedAt||0)-(a.addedAt||0);
+    if(da===db2)return(b.addedAt||0)-(a.addedAt||0);
     return da>db2?-1:1;
   });
-  // 部分一致検索（車名・車台番号・色・仕入先・年式・担当者）
-  if(q){
-    list=list.filter(v=>[v.name,v.vin,v.color,v.sup,v.year,v.staff,v.regNo]
-      .some(field=>(field||'').toLowerCase().includes(q)));
-  }
-  if(f.startsWith('s1_'))list=list.filter(v=>(v.status1||'undelivered')===f.slice(3));
+  if(q)list=list.filter(v=>[v.name,v.vin,v.color,v.sup,v.year,v.staff,v.regNo]
+    .some(fld=>(fld||'').toLowerCase().includes(q)));
+  if(f==='parts')list=list.filter(v=>v.needsParts);
+  else if(f.startsWith('s1_'))list=list.filter(v=>(v.status1||'undelivered')===f.slice(3));
   else if(f.startsWith('s2_'))list=list.filter(v=>(v.status2||'none')===f.slice(3));
 
   const el=document.getElementById('stock-list');
@@ -696,76 +745,120 @@ window.renderStock=function(){
   el.innerHTML=list.map(v=>{
     const s1=v.status1||'undelivered';
     const s2=v.status2||'none';
-    const s1info=S1[s1]||S1.undelivered;
-    const s2info=S2[s2]||S2.none;
+    const s1i=S1[s1]||S1.undelivered;
+    const s2i=S2[s2]||S2.none;
     const ic=Object.values(inspections).filter(i=>i.vehicleId===v.id).length;
+    const chk=checkedIds.has(v.id)?'checked':'';
 
-    // アクションボタン
-    let actionBtns='';
-    if(s1==='floor'){
-      const cb=v.cleaned?'<span style="font-size:10px;color:var(--green)">✅清掃済</span>'
-        :`<button class="btn btn-xs btn-gray" onclick="quickAction(event,'${v.id}','clean')">清掃完了</button>`;
-      const pb=v.photographed?'<span style="font-size:10px;color:var(--green)">✅撮影済</span>'
-        :`<button class="btn btn-xs btn-gray" onclick="quickAction(event,'${v.id}','photo')">撮影完了</button>`;
-      actionBtns=`<div class="action-btns">${cb}${pb}</div>`;
-    } else if(s1==='sold'){
-      const cb=v.cleaned?'<span style="font-size:10px;color:var(--green)">✅清掃済</span>'
-        :`<button class="btn btn-xs btn-gray" onclick="quickAction(event,'${v.id}','clean')">清掃完了</button>`;
-      const mb=v.maintained?'<span style="font-size:10px;color:var(--green)">✅整備済</span>'
-        :`<button class="btn btn-xs btn-orange" onclick="quickAction(event,'${v.id}','maintain')">整備完了</button>`;
-      actionBtns=`<div class="action-btns">${cb}${mb}</div>`;
+    // アクションボタン：未点検車のみ表示、完了は薄く（消えない）
+    // 在庫・代車・レンタカーステータスに関わらず同じ基準で表示
+    const isUninspected=(s2==='none');
+    const cleanCls=v.cleaned?'done':'';
+    const photoCls=v.photographed?'done':'';
+    const maintCls=v.maintained?'done':'';
+    let btnsHtml='<div class="action-btns-row">';
+    if(isUninspected){
+      // 店頭在庫系（床在庫・代車・レンタカー・出品・未着）：清掃・撮影
+      if(s1!=='sold'&&s1!=='delivered'){
+        btnsHtml+=`<button class="action-btn action-btn-clean ${cleanCls}" onclick="quickAction(event,'${v.id}','clean')">清掃<br>${v.cleaned?'済':'完了'}</button>`;
+        btnsHtml+=`<button class="action-btn action-btn-photo ${photoCls}" onclick="quickAction(event,'${v.id}','photo')">撮影<br>${v.photographed?'済':'完了'}</button>`;
+      }
+      // 販売済：清掃・整備
+      if(s1==='sold'){
+        btnsHtml+=`<button class="action-btn action-btn-clean ${cleanCls}" onclick="quickAction(event,'${v.id}','clean')">清掃<br>${v.cleaned?'済':'完了'}</button>`;
+        btnsHtml+=`<button class="action-btn action-btn-maint ${maintCls}" onclick="quickAction(event,'${v.id}','maintain')">整備<br>${v.maintained?'済':'完了'}</button>`;
+      }
     }
-    if(s2==='ng'&&s1!=='sold'){
-      actionBtns+=`<div class="action-btns"><button class="btn btn-xs btn-orange" onclick="quickAction(event,'${v.id}','maintain')">整備完了</button></div>`;
+    // 要整備の場合は整備完了ボタンを追加（未点検かどうか問わず）
+    if(s2==='ng'){
+      btnsHtml+=`<button class="action-btn action-btn-maint ${maintCls}" onclick="quickAction(event,'${v.id}','maintain')">整備<br>${v.maintained?'済':'完了'}</button>`;
     }
+    // 部品注文ありは常に表示
+    if(v.needsParts){
+      btnsHtml+=`<button class="action-btn action-btn-parts" onclick="quickAction(event,'${v.id}','parts')">部品<br>注文</button>`;
+    }
+    btnsHtml+='</div>';
 
     // 個別プルダウン
     const s1opts=Object.entries(S1).map(([k,sv])=>`<option value="${k}" ${s1===k?'selected':''}>${sv.label}</option>`).join('');
     const s2opts=Object.entries(S2).map(([k,sv])=>`<option value="${k}" ${s2===k?'selected':''}>${sv.label}</option>`).join('');
-    const chk=checkedIds.has(v.id)?'checked':'';
+
+    // 仕入日表示（西暦のまま）・年式（和暦）
+    const yearJp=toJapaneseYear(v.year);
 
     return`<div class="stock-item${chk?' checked':''}" id="si-${v.id}">
-      <input type="checkbox" ${chk} onchange="toggleCheck('${v.id}',this.checked)" style="margin-top:2px">
-      <div class="stock-item-body" onclick="openStockDetail('${v.id}')">
-        <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
-          <span class="badge ${s1info.cls}">${s1info.label}</span>
-          <span class="badge ${s2info.cls}">${s2info.label}</span>
-          <span style="font-weight:700">${v.name||'不明'}</span>
+      <div style="display:flex;gap:8px;align-items:flex-start">
+        <input type="checkbox" ${chk} onchange="toggleCheck('${v.id}',this.checked)" style="margin-top:6px;flex-shrink:0">
+        <div style="flex:1;min-width:0">
+          <!-- 1行目：バッジ -->
+          <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px;cursor:pointer" onclick="openStockDetail('${v.id}')">
+            <span class="badge ${s1i.cls}">${s1i.label}</span>
+            <span class="badge ${s2i.cls}">${s2i.label}</span>
+            ${v.needsParts?'<span class="badge b-parts" style="font-size:10px">🔩部品待ち</span>':''}
+          </div>
+          <!-- 2行目：車名＋色 -->
+          <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;cursor:pointer" onclick="openStockDetail('${v.id}')">
+            <span style="font-size:18px;font-weight:700;color:var(--text)">${v.name||'不明'}</span>
+            ${v.color?`<span style="font-size:18px;font-weight:700;color:var(--text2)">${v.color}</span>`:''}
+          </div>
+          <!-- 3行目：仕入日・仕入先・仕入金額 -->
+          <div style="font-size:11px;color:var(--text2);margin-top:3px;cursor:pointer" onclick="openStockDetail('${v.id}')">
+            ${v.date?`仕入 ${v.date}`:''}${v.sup?` / ${v.sup}`:''}${v.price?` / ¥${fmt(v.price)}`:''}
+          </div>
+          <!-- 4行目：年式（和暦）・車台番号 -->
+          <div style="font-size:11px;color:var(--text3);margin-top:1px;cursor:pointer" onclick="openStockDetail('${v.id}')">
+            ${yearJp?yearJp+' / ':''}${v.vin||''}
+          </div>
+          ${ic?`<span style="font-size:10px;background:var(--blue-bg);color:var(--blue);padding:1px 6px;border-radius:10px;margin-top:3px;display:inline-block;border:1px solid var(--blue)">📋 ${ic}件</span>`:''}
+          <!-- 個別プルダウン -->
+          <div style="display:flex;gap:4px;margin-top:6px" onclick="event.stopPropagation()">
+            <select class="individual-select" style="flex:1" onchange="indivChange('${v.id}','s1',this.value)">${s1opts}</select>
+            <select class="individual-select" style="flex:1" onchange="indivChange('${v.id}','s2',this.value)">${s2opts}</select>
+          </div>
+          <!-- アクションボタン横並び -->
+          <div onclick="event.stopPropagation()">${btnsHtml}</div>
         </div>
-        <div style="font-size:11px;color:var(--text2);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap">
-          ${v.color?`<span>🎨 ${v.color}</span>`:''}
-          ${v.sup?`<span>🏢 ${v.sup}</span>`:''}
-          ${v.vin?`<span style="color:var(--text3)">${v.vin}</span>`:''}
-        </div>
-        <div style="font-size:11px;color:var(--text3)">${v.date||''}${v.year?' / '+v.year+'年式':''}</div>
-        ${ic?`<span style="font-size:10px;background:var(--blue-bg);color:var(--blue);padding:1px 6px;border-radius:10px;margin-top:3px;display:inline-block">📋 ${ic}件</span>`:''}
-        ${actionBtns}
-        <div style="display:flex;gap:4px;margin-top:6px" onclick="event.stopPropagation()">
-          <select class="individual-select" style="flex:1" onchange="indivChange('${v.id}','s1',this.value)">${s1opts}</select>
-          <select class="individual-select" style="flex:1" onchange="indivChange('${v.id}','s2',this.value)">${s2opts}</select>
-        </div>
-      </div>
-      <div style="text-align:right;flex-shrink:0;margin-left:4px">
-        <div style="font-size:12px;font-weight:700">¥${fmt(v.total||v.price)}</div>
-        <div style="font-size:10px;color:var(--text3)">${v.loc||''}</div>
       </div>
     </div>`;
   }).join('');
   updateBulkBar();
 };
 
+// クイックアクション（トグル対応）
 window.quickAction=async function(e,id,type){
   e.stopPropagation();
   const v=stock[id];if(!v)return;
   const upd={};
-  if(type==='clean')    upd.cleaned=true;
-  if(type==='photo')    upd.photographed=true;
-  if(type==='maintain'){ upd.maintained=true; if(v.status2==='ng')upd.status2='ok'; }
+  if(type==='clean')    upd.cleaned=!v.cleaned;
+  if(type==='photo')    upd.photographed=!v.photographed;
+  if(type==='maintain'){
+    upd.maintained=!v.maintained;
+    // 整備完了にしたら要整備→異常なしへ、戻したら未点検へは変えない（点検ステータスはそのまま）
+    if(!v.maintained&&v.status2==='ng')upd.status2='ok';
+  }
+  if(type==='parts')    upd.needsParts=!v.needsParts;
   await dbUpd(`stock/${id}`,upd);
 };
-
 window.indivChange=async function(id,field,val){
-  if(field==='s1')await dbUpd(`stock/${id}`,{status1:val});
+  if(field==='s1'){
+    const v=stock[id];if(!v)return;
+    const upd={status1:val};
+    // 代車・レンタカーに変更した場合、まだ登録されていなければ代車タブに追加
+    if((val==='loaner'||val==='rental')&&!Object.values(cars).some(c=>c.stockId===id)){
+      const cid=uid();
+      upd.isLoaner=true;
+      await dbSet(`cars/${cid}`,{id:cid,name:v.name,plate:v.regNo||'未登録',status:'available',carType:val==='rental'?'rental':'loaner',fromStock:true,stockId:id,addedAt:nowTs()});
+    }
+    // 代車・レンタカー以外に変更した場合、代車から外す
+    if(val!=='loaner'&&val!=='rental'&&v.isLoaner){
+      const car=Object.values(cars).find(c=>c.stockId===id);
+      if(car&&car.status!=='out'){
+        await dbDel(`cars/${car.id}`);
+        upd.isLoaner=false;
+      }
+    }
+    await dbUpd(`stock/${id}`,upd);
+  }
   if(field==='s2')await dbUpd(`stock/${id}`,{status2:val});
 };
 
@@ -796,8 +889,7 @@ window.applyBulk=async function(){
   const lblMap={
     s1_undelivered:'店頭未着',s1_floor:'店頭在庫',s1_loaner:'代車',s1_rental:'レンタカー',
     s1_listing:'出品',s1_sold:'販売済',s1_delivered:'納車完了',
-    s2_none:'未点検',s2_ng:'点検済(要整備)',s2_ok:'点検済(異常なし)',s2_skip:'点検不要',
-    delete:'削除'
+    s2_none:'未点検',s2_ng:'点検済(要整備)',s2_ok:'点検済',s2_skip:'点検不要',delete:'削除'
   };
   if(!confirm(`選択した${checkedIds.size}台を「${lblMap[action]}」にしますか？`))return;
   showLoading(`${checkedIds.size}台を処理中...`);
@@ -808,7 +900,7 @@ window.applyBulk=async function(){
       const car=Object.values(cars).find(c=>c.stockId===id);
       if(car)promises.push(dbDel(`cars/${car.id}`));
       promises.push(dbDel(`stock/${id}`));
-    } else if(action.startsWith('s1_')){
+    }else if(action.startsWith('s1_')){
       const newS1=action.slice(3);
       const upd={status1:newS1};
       if((newS1==='loaner'||newS1==='rental')&&!Object.values(cars).some(c=>c.stockId===id)){
@@ -817,13 +909,15 @@ window.applyBulk=async function(){
         upd.isLoaner=true;
       }
       promises.push(dbUpd(`stock/${id}`,upd));
-    } else if(action.startsWith('s2_')){
+    }else if(action.startsWith('s2_')){
       promises.push(dbUpd(`stock/${id}`,{status2:action.slice(3)}));
     }
   }
   await Promise.all(promises);
+  // チェックボックスをリセット
   checkedIds.clear();
   document.getElementById('bulk-action').value='';
+  document.getElementById('chk-all').checked=false;
   hideLoading();
 };
 
@@ -834,23 +928,23 @@ window.openStockDetail=function(id){
   const ins=Object.values(inspections).filter(i=>i.vehicleId===id);
   const s1opts=Object.entries(S1).map(([k,sv])=>`<option value="${k}" ${(v.status1||'undelivered')===k?'selected':''}>${sv.label}</option>`).join('');
   const s2opts=Object.entries(S2).map(([k,sv])=>`<option value="${k}" ${(v.status2||'none')===k?'selected':''}>${sv.label}</option>`).join('');
-  const loanerCar=Object.values(cars).find(c=>c.stockId===id);
   const lbBtns=v.isLoaner
     ?`<button class="btn btn-sm btn-danger" style="width:100%;margin-top:4px" onclick="removeFromLoaner('${v.id}')">代車/レンタカーから外す</button>`
     :`<div style="display:flex;gap:6px;margin-top:4px">
        <button class="btn btn-sm btn-blue" style="flex:1" onclick="addFromStockDirect('${v.id}','loaner')">代車に追加</button>
-       <button class="btn btn-sm btn-amber" style="flex:1" onclick="addFromStockDirect('${v.id}','rental')">レンタカーに追加</button>
+       <button class="btn btn-sm btn-cyan" style="flex:1" onclick="addFromStockDirect('${v.id}','rental')">レンタカーに追加</button>
      </div>`;
+  const yearJp=toJapaneseYear(v.year);
   const rows=[
-    ['車台番号',v.vin],['色',v.color],['年式',v.year],['車検期限',v.shaken],
+    ['車台番号',v.vin],['色',v.color],['年式',yearJp],['車検期限',v.shaken],
     ['仕入日',v.date],['契約日',v.cdate],['納車日',v.ddate],['売上日',v.sdate],
-    ['仕入先',v.sup],['担当者',v.staff],['保管場所',v.loc],
-    ['仕入金額','¥'+fmt(v.price)],['合計金額','¥'+fmt(v.total)],
-  ].filter(([,val])=>val&&val!=='¥0'&&val!=='¥').map(([k,val])=>`<tr><td>${k}</td><td>${val}</td></tr>`).join('');
-  // 仕上進捗チェックボックス（販売済の場合のみ表示）
-  const finishSection = (v.status1||'undelivered')==='sold' ? `
+    ['仕入先',v.sup],['担当者',v.staff],['仕入金額',v.price?'¥'+fmt(v.price):''],
+    ['合計金額',v.total?'¥'+fmt(v.total):''],
+  ].filter(([,val])=>val).map(([k,val])=>`<tr><td>${k}</td><td>${val}</td></tr>`).join('');
+
+  const finishSection=(v.status1||'undelivered')==='sold'?`
     <p class="lbl">仕上進捗</p>
-    <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;margin-bottom:4px;display:flex;gap:16px;flex-wrap:wrap">
+    <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;margin-bottom:4px;display:flex;gap:16px;flex-wrap:wrap;border:1px solid var(--border)">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
         <input type="checkbox" id="sd-cleaned" ${v.cleaned?'checked':''} style="width:18px;height:18px;accent-color:var(--accent)">清掃完了
       </label>
@@ -859,13 +953,13 @@ window.openStockDetail=function(id){
       </label>
     </div>
     ${v.cleaned&&v.maintained?'<div style="font-size:11px;color:var(--green);font-weight:700;margin-bottom:4px">✅ 仕上完了</div>':'<div style="font-size:11px;color:var(--orange);margin-bottom:4px">⏳ 仕上未完了</div>'}
-  ` : '';
+  `:'';
+
   document.getElementById('sd-body').innerHTML=`
     <table class="dtable">${rows}${v.equip?`<tr><td>装備品</td><td style="font-size:11px">${v.equip}</td></tr>`:''}</table>
     <p class="lbl">ステータス①（場所・進捗）</p><select id="sd-s1">${s1opts}</select>
     <p class="lbl">ステータス②（点検）</p><select id="sd-s2" style="margin-bottom:4px">${s2opts}</select>
-    ${finishSection}
-    ${lbBtns}
+    ${finishSection}${lbBtns}
     <p class="lbl">メモ</p><textarea id="sd-memo" rows="2" style="margin-bottom:10px">${v.memo||''}</textarea>
     ${ins.length?`<p class="lbl">点検シート（${ins.length}件）</p>
     <div class="photo-grid" style="margin-bottom:10px">${ins.map(i=>`<div class="photo-card" style="position:relative">
@@ -874,7 +968,7 @@ window.openStockDetail=function(id){
         <div style="font-size:11px;font-weight:700">${i.date}${i.needRepair?'<span style="color:var(--red)"> ⚠️</span>':''}</div>
         <div style="font-size:10px;color:var(--text3)">${i.memo||''}</div>
         <div style="display:flex;gap:4px;margin-top:4px">
-          <button class="btn btn-xs btn-gray" onclick="unlinkSingleInsp('${i.id}')" title="この車両との紐付けを解除">紐付解除</button>
+          <button class="btn btn-xs btn-gray" onclick="unlinkSingleInsp('${i.id}')">紐付解除</button>
           <button class="btn btn-xs btn-danger" onclick="deleteSingleInsp('${i.id}')">削除</button>
         </div>
       </div>
@@ -885,6 +979,7 @@ window.openStockDetail=function(id){
     </div>`;
   openModal('modal-stock-detail');
 };
+
 window.saveSD=async function(id){
   const v=stock[id];if(!v)return;
   const newS1=document.getElementById('sd-s1').value;
@@ -893,51 +988,84 @@ window.saveSD=async function(id){
     status2:document.getElementById('sd-s2').value,
     memo:document.getElementById('sd-memo').value
   };
-  // 仕上進捗チェックボックスは販売済の場合のみ保存
   if(newS1==='sold'){
-    upd.cleaned  = document.getElementById('sd-cleaned')?.checked||false;
-    upd.maintained = document.getElementById('sd-maintained')?.checked||false;
+    upd.cleaned  =document.getElementById('sd-cleaned')?.checked||false;
+    upd.maintained=document.getElementById('sd-maintained')?.checked||false;
   }
-  await dbUpd(`stock/${id}`,upd);
-  closeModal('modal-stock-detail');
-};
-
-// 点検シート：単体削除
-window.deleteSingleInsp=async function(id){
-  if(!confirm('この点検シートを削除しますか？'))return;
-  await dbDel(`inspections/${id}`);
-  // 詳細モーダルを閉じて再描画（onValueで自動更新）
-};
-// 点検シート：単体紐付け解除（車両IDをnullに）
-window.unlinkSingleInsp=async function(id){
-  const ins=inspections[id];if(!ins)return;
-  if(!ins.vehicleId){alert('この点検シートは車両と紐付いていません');return;}
-  if(!confirm(`「${ins.carName}」との紐付けを解除しますか？\n写真データは削除されません。`))return;
-  await dbUpd(`inspections/${id}`,{vehicleId:null});
-};
-// 点検シート一覧：選択した複数の紐付け解除
-window.unlinkCheckedInsp=async function(){
-  if(!inspCheckedIds.size){alert('紐付け解除する点検シートを選択してください');return;}
-  const targets=Array.from(inspCheckedIds).filter(id=>inspections[id]?.vehicleId);
-  if(!targets.length){alert('選択中の点検シートはすでに車両と紐付いていません');return;}
-  if(!confirm(`選択した${targets.length}件の車両紐付けを解除しますか？\n写真データは削除されません。`))return;
-  showLoading('処理中...');
-  for(const id of targets) await dbUpd(`inspections/${id}`,{vehicleId:null});
-  inspCheckedIds.clear();
-  hideLoading();
+  await dbUpd(`stock/${id}`,upd);closeModal('modal-stock-detail');
 };
 
 // ===== 点検シート =====
+let selectedUpVehicleId=null;
+
 window.openUpload=function(){
-  const sorted=Object.values(stock).filter(v=>v.status1!=='delivered').sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
-  document.getElementById('up-vehicle').innerHTML='<option value="">-- 車両を選択 --</option>'+
-    sorted.map(v=>`<option value="${v.id}">${v.name}${v.vin?' ('+v.vin+')':''}</option>`).join('');
+  selectedUpVehicleId=null;
+  document.getElementById('selected-vehicle-tag').style.display='none';
+  document.getElementById('up-vehicle-search').value='';
+  document.getElementById('vehicle-search-results').style.display='none';
+  document.getElementById('up-name').value='';
+  document.getElementById('up-memo').value='';
+  document.getElementById('up-parts').checked=false;
   uploadDataUrl=null;
   document.getElementById('up-preview').innerHTML='<div style="font-size:24px">📷</div><p style="font-size:13px">タップして写真を選択</p>';
-  document.getElementById('up-name').value='';document.getElementById('up-memo').value='';
-  document.getElementById('up-repair').checked=false;
   const prog=document.getElementById('up-progress');prog.style.display='none';prog.textContent='';
+  // 絞り込みプルダウン：店頭在庫×未点検×仕入日新しい順（表示は車名+色+車台番号）
+  const filtered=Object.values(stock)
+    .filter(v=>(v.status1||'undelivered')==='floor'&&(v.status2||'none')==='none')
+    .sort((a,b)=>{const da=a.date||'',db2=b.date||'';return da===db2?(b.addedAt||0)-(a.addedAt||0):da>db2?-1:1;});
+  const qw=document.getElementById('quick-select-wrap');
+  const qs=document.getElementById('up-vehicle-quick');
+  if(filtered.length){
+    qw.style.display='block';
+    qs.innerHTML='<option value="">-- 店頭在庫・未点検から選択 --</option>'+
+      filtered.map(v=>`<option value="${v.id}">${v.name}${v.color?' '+v.color:''}${v.vin?' '+v.vin:''}</option>`).join('');
+  }else{
+    qw.style.display='none';
+  }
   openModal('modal-upload');
+};
+
+window.selectVehicleFromQuick=function(vid){
+  if(!vid)return;
+  setSelectedVehicle(vid);
+  document.getElementById('up-vehicle-quick').value='';
+  // 選択後は絞り込みプルダウンを非表示
+  document.getElementById('quick-select-wrap').style.display='none';
+};
+
+window.searchVehicles=function(q){
+  const res=document.getElementById('vehicle-search-results');
+  if(!q){res.style.display='none';return;}
+  const matches=Object.values(stock)
+    .filter(v=>[v.name,v.vin,v.color,v.sup].some(f=>(f||'').toLowerCase().includes(q.toLowerCase())))
+    .sort((a,b)=>{const da=a.date||'',db=b.date||'';return da>db?-1:1;})
+    .slice(0,20);
+  if(!matches.length){res.style.display='none';return;}
+  res.style.display='block';
+  res.innerHTML=matches.map(v=>`<div onclick="selectVehicleFromSearch('${v.id}')" style="padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;color:var(--text)">
+    <span style="font-weight:700">${v.name}</span>
+    <span style="font-size:11px;color:var(--text3)">${v.color?' '+v.color:''}${v.vin?' / '+v.vin:''}</span>
+  </div>`).join('');
+};
+
+window.selectVehicleFromSearch=function(vid){
+  setSelectedVehicle(vid);
+  document.getElementById('up-vehicle-search').value='';
+  document.getElementById('vehicle-search-results').style.display='none';
+};
+
+function setSelectedVehicle(vid){
+  const v=stock[vid];if(!v)return;
+  selectedUpVehicleId=vid;
+  document.getElementById('selected-vehicle-name').textContent=`✅ ${v.name}${v.color?' '+v.color:''}${v.vin?' / '+v.vin:''}`;
+  document.getElementById('selected-vehicle-tag').style.display='flex';
+}
+window.clearVehicleSelect=function(){
+  selectedUpVehicleId=null;
+  document.getElementById('selected-vehicle-tag').style.display='none';
+  // 絞り込みプルダウンを再表示
+  const qw=document.getElementById('quick-select-wrap');
+  if(qw)qw.style.display='block';
 };
 window.previewPhoto=function(e){
   const file=e.target.files[0];if(!file)return;
@@ -958,29 +1086,33 @@ window.previewPhoto=function(e){
   reader.readAsDataURL(file);
 };
 window.saveInsp=async function(){
-  const vid=document.getElementById('up-vehicle').value;
+  const vid=selectedUpVehicleId;
   const mn=document.getElementById('up-name').value.trim();
   const v=vid?stock[vid]:null;
   const name=v?v.name:mn;
   if(!name){alert('車両を選択するか車種名を入力してください');return;}
   if(!uploadDataUrl){alert('写真を選択してください');return;}
   const memo=document.getElementById('up-memo').value.trim();
-  const needRepair=document.getElementById('up-repair').checked;
+  const needsParts=document.getElementById('up-parts').checked;
   const btn=document.getElementById('btn-save-insp');
   const prog=document.getElementById('up-progress');
   btn.disabled=true;prog.style.display='block';prog.textContent='📤 保存中...';
   try{
     const id=uid();
-    await dbSet(`inspections/${id}`,{id,vehicleId:vid||null,carName:name,memo,needRepair,photoUrl:uploadDataUrl,date:today(),addedAt:nowTs()});
-    if(vid&&v) await dbUpd(`stock/${vid}`,{status2:needRepair?'ng':'ok'});
-    prog.textContent='✅ 保存しました';
-    uploadDataUrl=null;
+    await dbSet(`inspections/${id}`,{id,vehicleId:vid||null,carName:name,memo,needsParts,photoUrl:uploadDataUrl,date:today(),addedAt:nowTs()});
+    if(vid&&v){
+      // 部品注文あり→点検済(要整備)、なし→点検済
+      const upd={status2:needsParts?'ng':'ok'};
+      if(needsParts)upd.needsParts=true;
+      await dbUpd(`stock/${vid}`,upd);
+    }
+    prog.textContent='✅ 保存しました';uploadDataUrl=null;selectedUpVehicleId=null;
     setTimeout(()=>closeModal('modal-upload'),700);
   }catch(err){prog.textContent='❌ エラー: '+err.message;}
   btn.disabled=false;
 };
 
-// 点検シートチェックボックス管理
+// チェックボックス
 window.toggleInspCheck=function(id,checked){
   if(checked)inspCheckedIds.add(id);else inspCheckedIds.delete(id);
   document.querySelector(`.photo-card[data-id="${id}"]`)?.classList.toggle('checked',checked);
@@ -988,8 +1120,7 @@ window.toggleInspCheck=function(id,checked){
 };
 window.toggleInspAll=function(checked){
   document.querySelectorAll('.photo-chk').forEach(cb=>{
-    const id=cb.dataset.id;
-    cb.checked=checked;
+    const id=cb.dataset.id;cb.checked=checked;
     if(checked)inspCheckedIds.add(id);else inspCheckedIds.delete(id);
     cb.closest('.photo-card')?.classList.toggle('checked',checked);
   });
@@ -1002,11 +1133,29 @@ function updateInspBulkBar(){
 }
 window.deleteCheckedInsp=async function(){
   if(!inspCheckedIds.size){alert('削除する点検シートを選択してください');return;}
-  if(!confirm(`選択した${inspCheckedIds.size}件の点検シートを削除しますか？`))return;
+  if(!confirm(`選択した${inspCheckedIds.size}件を削除しますか？`))return;
   showLoading('削除中...');
-  for(const id of inspCheckedIds) await dbDel(`inspections/${id}`);
-  inspCheckedIds.clear();
-  hideLoading();
+  for(const id of inspCheckedIds)await dbDel(`inspections/${id}`);
+  inspCheckedIds.clear();hideLoading();
+};
+window.unlinkCheckedInsp=async function(){
+  if(!inspCheckedIds.size){alert('紐付け解除する点検シートを選択してください');return;}
+  const targets=Array.from(inspCheckedIds).filter(id=>inspections[id]?.vehicleId);
+  if(!targets.length){alert('選択中の点検シートはすでに車両と紐付いていません');return;}
+  if(!confirm(`選択した${targets.length}件の車両紐付けを解除しますか？\n写真データは削除されません。`))return;
+  showLoading('処理中...');
+  for(const id of targets)await dbUpd(`inspections/${id}`,{vehicleId:null});
+  inspCheckedIds.clear();hideLoading();
+};
+window.deleteSingleInsp=async function(id){
+  if(!confirm('この点検シートを削除しますか？'))return;
+  await dbDel(`inspections/${id}`);
+};
+window.unlinkSingleInsp=async function(id){
+  const ins=inspections[id];if(!ins)return;
+  if(!ins.vehicleId){alert('この点検シートは車両と紐付いていません');return;}
+  if(!confirm(`「${ins.carName}」との紐付けを解除しますか？\n写真データは削除されません。`))return;
+  await dbUpd(`inspections/${id}`,{vehicleId:null});
 };
 
 function renderInspections(){
@@ -1021,21 +1170,77 @@ function renderInspections(){
       <input type="checkbox" class="photo-chk" data-id="${ins.id}" ${chk} onchange="toggleInspCheck('${ins.id}',this.checked)">
       <img src="${ins.photoUrl}" loading="lazy" alt="${ins.carName}" onclick="viewPhotoById('${ins.id}')">
       <div class="photo-info">
-        <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ins.carName}</div>
+        <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)">${ins.carName}</div>
         <div style="font-size:10px;color:var(--text3)">${ins.date}${ins.needRepair?'<span style="color:var(--red)"> ⚠️</span>':''}${ins.memo?' · '+ins.memo:''}</div>
       </div>
     </div>`;
   }).join('');
   updateInspBulkBar();
 }
+
+// 画像拡大（削除・整備完了・必要部品ありボタン付き）
 window.viewPhotoById=function(id){
   const ins=inspections[id];if(!ins)return;
+  fullImgInspId=id;
   document.getElementById('full-img-el').src=ins.photoUrl;
   document.getElementById('full-img-name').textContent=ins.carName+(ins.needRepair?' ⚠️要整備':'');
   document.getElementById('full-img-meta').textContent=ins.date+(ins.memo?' · '+ins.memo:'');
+
+  const vid=ins.vehicleId;
+  const v=vid?stock[vid]:null;
+  const maintDone=v?.maintained;
+  const partsDone=v?.needsParts;
+
+  document.getElementById('full-btns').innerHTML=`
+    <button class="btn btn-danger" style="flex-direction:column;gap:2px;min-width:72px;padding:10px 12px" onclick="fullImgDelete()">
+      🗑️<span style="font-size:10px">削除</span>
+    </button>
+    ${v?`<button class="btn ${maintDone?'btn-orange':'btn-gray'}" style="flex-direction:column;gap:2px;min-width:72px;padding:10px 12px" onclick="fullImgMaintain()">
+      🔧<span style="font-size:10px">整備${maintDone?'済':'完了'}</span>
+    </button>
+    <button class="btn ${partsDone?'btn-primary':'btn-gray'}" style="flex-direction:column;gap:2px;min-width:72px;padding:10px 12px;${partsDone?'animation:pulse 1.5s infinite':''}" onclick="fullImgParts()">
+      🔩<span style="font-size:10px">部品${partsDone?'あり':'注文'}</span>
+    </button>`:''}`;
+
   document.getElementById('full-img').classList.add('open');
 };
-window.closeFullImg=()=>document.getElementById('full-img').classList.remove('open');
+
+window.fullImgDelete=async function(){
+  if(!fullImgInspId)return;
+  if(!confirm('この点検シートを削除しますか？'))return;
+  await dbDel(`inspections/${fullImgInspId}`);
+  closeFullImg();
+};
+window.fullImgMaintain=async function(){
+  const ins=inspections[fullImgInspId];if(!ins||!ins.vehicleId)return;
+  const v=stock[ins.vehicleId];if(!v)return;
+  const newVal=!v.maintained;
+  const upd={maintained:newVal};
+  if(newVal&&v.status2==='ng')upd.status2='ok';
+  await dbUpd(`stock/${ins.vehicleId}`,upd);
+  // ボタン更新
+  viewPhotoById(fullImgInspId);
+};
+window.fullImgParts=async function(){
+  const ins=inspections[fullImgInspId];if(!ins||!ins.vehicleId)return;
+  const v=stock[ins.vehicleId];if(!v)return;
+  await dbUpd(`stock/${ins.vehicleId}`,{needsParts:!v.needsParts});
+  viewPhotoById(fullImgInspId);
+};
+window.closeFullImg=function(){document.getElementById('full-img').classList.remove('open');fullImgInspId=null;};
+
+// ===== デバッグパネル（ヘッダー長押しで表示）=====
+let debugTouchTimer=null;
+window.debugTouchStart=function(){debugTouchTimer=setTimeout(()=>toggleDebugPanel(),1000);};
+window.debugTouchEnd=function(){clearTimeout(debugTouchTimer);};
+window.toggleDebugPanel=function(){
+  const p=document.getElementById('debug-panel');
+  if(p)p.style.display=p.style.display==='none'?'block':'none';
+};
+window.forceDeleteCar=async function(id){
+  if(!confirm('この車両を強制削除しますか？'))return;
+  await dbDel(`cars/${id}`);
+};
 
 startListeners();
 </script>
