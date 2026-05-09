@@ -141,8 +141,9 @@
   .action-btn-clean.done{background:var(--surface3);border-color:var(--border2);color:var(--text3);opacity:0.45}
   .action-btn-photo.done{background:var(--surface3);border-color:var(--border2);color:var(--text3);opacity:0.45}
   .action-btn-maint.done{background:var(--surface3);border-color:var(--border2);color:var(--text3);opacity:0.45}
-  /* 部品注文：常に点滅 */
+  /* 部品注文：注文あり=点滅、注文なし=薄い */
   .action-btn-parts{background:var(--pink-bg);border-color:var(--pink);color:var(--pink);animation:pulse 1.5s infinite}
+  .action-btn-parts-off{background:var(--surface3);border-color:var(--border2);color:var(--text3);opacity:0.45}
   .individual-select{font-size:11px;padding:3px 5px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-family:inherit;cursor:pointer}
   .dtable{width:100%;font-size:12px;border-collapse:collapse;margin-bottom:10px}
   .dtable td{padding:5px 0;vertical-align:top;border-bottom:1px solid var(--border)}
@@ -167,7 +168,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム</div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.04</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -196,6 +197,7 @@
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
       <span style="font-size:12px;font-weight:700;color:var(--text2)">一覧</span>
       <div style="display:flex;gap:5px">
+        <button class="btn btn-sm" style="background:var(--purple-bg);border-color:var(--purple)" onclick="openHistory()">📋 履歴</button>
         <button class="btn btn-sm btn-gray" onclick="openAddFromStock('loaner')">販売車から追加</button>
         <button class="btn btn-sm btn-success" onclick="openAddCar('loaner')">＋ 代車</button>
         <button class="btn btn-sm btn-cyan" onclick="openAddCar('rental')">＋ レンタ</button>
@@ -352,6 +354,13 @@
   </div>
 </div>
 <div class="modal-wrap" id="modal-stock-detail"><div class="modal-box"><div class="modal-handle"></div><p class="modal-title" id="sd-title"></p><div id="sd-body"></div></div></div>
+<div class="modal-wrap" id="modal-history">
+  <div class="modal-box"><div class="modal-handle"></div>
+    <p class="modal-title">📋 貸出履歴</p>
+    <div id="history-list"></div>
+    <button class="btn" style="width:100%;margin-top:12px" onclick="closeModal('modal-history')">閉じる</button>
+  </div>
+</div>
 
 <!-- 画像拡大表示 -->
 <div class="full-wrap" id="full-img">
@@ -397,7 +406,7 @@ const S2={
   skip:{label:'点検不要',       cls:'b-insp-skip'},
 };
 
-let cars={},stock={},inspections={};
+let cars={},stock={},inspections={},loanHistories={};
 let uploadDataUrl=null,selectedCarId=null,addCarType='loaner';
 let checkedIds=new Set(),inspCheckedIds=new Set();
 let fullImgInspId=null;
@@ -408,6 +417,33 @@ function nowTs(){return Date.now();}
 function fmt(n){return n?Number(n).toLocaleString():'';}
 function uid(){return 'i'+nowTs()+Math.random().toString(36).slice(2,6);}
 function daysSince(ts){return ts?Math.floor((Date.now()-ts)/86400000):null;}
+
+// 半角→全角変換（色名などに使用）：半角英数・半角カナを全角に変換
+function toFullWidth(s){
+  if(!s)return s;
+  // 半角カナ→全角カナ変換テーブル
+  const kanaMap={
+    'ｦ':'ヲ','ｧ':'ァ','ｨ':'ィ','ｩ':'ゥ','ｪ':'ェ','ｫ':'ォ','ｬ':'ャ','ｭ':'ュ','ｮ':'ョ','ｯ':'ッ','ｰ':'ー',
+    'ｱ':'ア','ｲ':'イ','ｳ':'ウ','ｴ':'エ','ｵ':'オ','ｶ':'カ','ｷ':'キ','ｸ':'ク','ｹ':'ケ','ｺ':'コ',
+    'ｻ':'サ','ｼ':'シ','ｽ':'ス','ｾ':'セ','ｿ':'ソ','ﾀ':'タ','ﾁ':'チ','ﾂ':'ツ','ﾃ':'テ','ﾄ':'ト',
+    'ﾅ':'ナ','ﾆ':'ニ','ﾇ':'ヌ','ﾈ':'ネ','ﾉ':'ノ','ﾊ':'ハ','ﾋ':'ヒ','ﾌ':'フ','ﾍ':'ヘ','ﾎ':'ホ',
+    'ﾏ':'マ','ﾐ':'ミ','ﾑ':'ム','ﾒ':'メ','ﾓ':'モ','ﾔ':'ヤ','ﾕ':'ユ','ﾖ':'ヨ',
+    'ﾗ':'ラ','ﾘ':'リ','ﾙ':'ル','ﾚ':'レ','ﾛ':'ロ','ﾜ':'ワ','ﾝ':'ン','ﾞ':'゛','ﾟ':'゜'
+  };
+  const dk={'カ':'ガ','キ':'ギ','ク':'グ','ケ':'ゲ','コ':'ゴ','サ':'ザ','シ':'ジ','ス':'ズ','セ':'ゼ','ソ':'ゾ',
+    'タ':'ダ','チ':'ヂ','ツ':'ヅ','テ':'デ','ト':'ド','ハ':'バ','ヒ':'ビ','フ':'ブ','ヘ':'ベ','ホ':'ボ','ウ':'ヴ'};
+  const hdk={'ハ':'パ','ヒ':'ピ','フ':'プ','ヘ':'ペ','ホ':'ポ'};
+  // まず半角カナ→全角カナ（濁点・半濁点合成）
+  const arr=s.split('').map(c=>kanaMap[c]||c);
+  let result='';
+  for(let i=0;i<arr.length;i++){
+    if(arr[i]==='゛'&&result&&dk[result[result.length-1]]){result=result.slice(0,-1)+dk[result[result.length-1]];}
+    else if(arr[i]==='゜'&&result&&hdk[result[result.length-1]]){result=result.slice(0,-1)+hdk[result[result.length-1]];}
+    else result+=arr[i];
+  }
+  // 半角英数→全角英数
+  return result.replace(/[A-Za-z0-9]/g,c=>String.fromCharCode(c.charCodeAt(0)+0xFEE0));
+}
 
 // 西暦→和暦変換
 function toJapaneseYear(dateStr){
@@ -439,6 +475,7 @@ function startListeners(){
   onValue(ref(db,'cars'),        snap=>{cars=snap.val()||{};       renderLoaner();});
   onValue(ref(db,'stock'),       snap=>{stock=snap.val()||{};      renderStockStats();renderStock();updateCsvCount();});
   onValue(ref(db,'inspections'), snap=>{inspections=snap.val()||{};renderInspections();});
+  onValue(ref(db,'loanHistories'),snap=>{loanHistories=snap.val()||{};});
 }
 
 async function dbSet(p,d){setSyncSt('● 保存中...','saving');await set(ref(db,p),d);}
@@ -547,7 +584,28 @@ window.doAction=async function(action){
   const b=document.getElementById('act-b');
   if(action==='out'){car.status='out';car.borrower=(b?.value||'').trim()||'不明';car.since=today();car.outTs=nowTs();}
   else if(action==='reserve'){car.status='reserved';car.borrower=(b?.value||'').trim()||'不明';}
-  else if(action==='return'){car.status='available';car.borrower=null;car.since=null;car.outTs=null;}
+  else if(action==='return'){
+    // 返却時に履歴を保存
+    if(car.borrower&&car.outTs){
+      const hid=uid();
+      const returnTs=nowTs();
+      const lentDays=Math.max(1,Math.round((returnTs-car.outTs)/86400000));
+      await dbSet(`loanHistories/${hid}`,{
+        id:hid,
+        carId:car.id,
+        carName:car.name,
+        carType:car.carType||'loaner',
+        borrower:car.borrower,
+        outDate:car.since||'',
+        outTs:car.outTs,
+        returnDate:today(),
+        returnTs,
+        days:lentDays,
+        addedAt:returnTs
+      });
+    }
+    car.status='available';car.borrower=null;car.since=null;car.outTs=null;
+  }
   else if(action==='cancel'){car.status='available';car.borrower=null;}
   await dbSet(`cars/${car.id}`,car);closeModal('modal-action');
 };
@@ -568,8 +626,10 @@ window.addCar=async function(){
 };
 window.removeCar=async function(id){
   const car=cars[id];if(!car)return;
-  if(!confirm(`「${car.name}」を削除しますか？`))return;
-  if(car.stockId&&stock[car.stockId])await dbUpd(`stock/${car.stockId}`,{isLoaner:false});
+  if(!confirm(`「${car.name}」を代車一覧から削除しますか？\n${car.fromStock?'販売車のステータスは「店頭在庫」に戻ります。':''}` ))return;
+  if(car.stockId&&stock[car.stockId]){
+    await dbUpd(`stock/${car.stockId}`,{isLoaner:false,status1:'floor'});
+  }
   await dbDel(`cars/${id}`);
 };
 window.openAddFromStock=function(type){
@@ -750,34 +810,34 @@ window.renderStock=function(){
     const ic=Object.values(inspections).filter(i=>i.vehicleId===v.id).length;
     const chk=checkedIds.has(v.id)?'checked':'';
 
-    // アクションボタン：未点検車のみ表示、完了は薄く（消えない）
-    // 在庫・代車・レンタカーステータスに関わらず同じ基準で表示
-    const isUninspected=(s2==='none');
+
+    // アクションボタン：店頭未着・納車完了以外はすべて表示、完了=薄く、再タップで戻る
     const cleanCls=v.cleaned?'done':'';
     const photoCls=v.photographed?'done':'';
     const maintCls=v.maintained?'done':'';
-    let btnsHtml='<div class="action-btns-row">';
-    if(isUninspected){
-      // 店頭在庫系（床在庫・代車・レンタカー・出品・未着）：清掃・撮影
-      if(s1!=='sold'&&s1!=='delivered'){
-        btnsHtml+=`<button class="action-btn action-btn-clean ${cleanCls}" onclick="quickAction(event,'${v.id}','clean')">清掃<br>${v.cleaned?'済':'完了'}</button>`;
-        btnsHtml+=`<button class="action-btn action-btn-photo ${photoCls}" onclick="quickAction(event,'${v.id}','photo')">撮影<br>${v.photographed?'済':'完了'}</button>`;
+    let btnsHtml='';
+    if(s1!=='undelivered'&&s1!=='delivered'){
+      btnsHtml='<div class="action-btns-row">';
+      // 清掃・撮影（販売済以外）
+      if(s1!=='sold'){
+        btnsHtml+=`<button class="action-btn action-btn-clean ${cleanCls}" onclick="quickAction(event,'${v.id}','clean')">清掃<br>完了</button>`;
+        btnsHtml+=`<button class="action-btn action-btn-photo ${photoCls}" onclick="quickAction(event,'${v.id}','photo')">撮影<br>完了</button>`;
       }
-      // 販売済：清掃・整備
+      // 清掃・整備（販売済）
       if(s1==='sold'){
-        btnsHtml+=`<button class="action-btn action-btn-clean ${cleanCls}" onclick="quickAction(event,'${v.id}','clean')">清掃<br>${v.cleaned?'済':'完了'}</button>`;
-        btnsHtml+=`<button class="action-btn action-btn-maint ${maintCls}" onclick="quickAction(event,'${v.id}','maintain')">整備<br>${v.maintained?'済':'完了'}</button>`;
+        btnsHtml+=`<button class="action-btn action-btn-clean ${cleanCls}" onclick="quickAction(event,'${v.id}','clean')">清掃<br>完了</button>`;
+        btnsHtml+=`<button class="action-btn action-btn-maint ${maintCls}" onclick="quickAction(event,'${v.id}','maintain')">整備<br>完了</button>`;
       }
+      // 整備完了（販売済以外：常に表示）
+      if(s1!=='sold'){
+        btnsHtml+=`<button class="action-btn action-btn-maint ${maintCls}" onclick="quickAction(event,'${v.id}','maintain')">整備<br>完了</button>`;
+      }
+      // 部品注文（常に表示、注文あり=点滅、なし=薄い）
+      btnsHtml+=v.needsParts
+        ?`<button class="action-btn action-btn-parts" onclick="quickAction(event,'${v.id}','parts')">部品<br>注文</button>`
+        :`<button class="action-btn action-btn-parts-off" onclick="quickAction(event,'${v.id}','parts')">部品<br>注文</button>`;
+      btnsHtml+='</div>';
     }
-    // 要整備の場合は整備完了ボタンを追加（未点検かどうか問わず）
-   if(s2!=='none'&&s2!=='skip'&&s1!=='sold'){
-    btnsHtml+=`<button class="action-btn action-btn-maint ${maintCls}" onclick="quickAction(event,'${v.id}','maintain')">整備<br>完了</button>`;
-    }
-    // 部品注文ありは常に表示
-    if(v.needsParts){
-      btnsHtml+=`<button class="action-btn action-btn-parts" onclick="quickAction(event,'${v.id}','parts')">部品<br>注文</button>`;
-    }
-    btnsHtml+='</div>';
 
     // 個別プルダウン
     const s1opts=Object.entries(S1).map(([k,sv])=>`<option value="${k}" ${s1===k?'selected':''}>${sv.label}</option>`).join('');
@@ -799,7 +859,7 @@ window.renderStock=function(){
           <!-- 2行目：車名＋色 -->
           <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;cursor:pointer" onclick="openStockDetail('${v.id}')">
             <span style="font-size:18px;font-weight:700;color:var(--text)">${v.name||'不明'}</span>
-            ${v.color?`<span style="font-size:18px;font-weight:700;color:var(--text2)">${v.color}</span>`:''}
+            ${v.color?`<span style="font-size:18px;font-weight:700;color:#fff">${toFullWidth(v.color)}</span>`:''}
           </div>
           <!-- 3行目：仕入日・仕入先・仕入金額 -->
           <div style="font-size:11px;color:var(--text2);margin-top:3px;cursor:pointer" onclick="openStockDetail('${v.id}')">
@@ -833,8 +893,13 @@ window.quickAction=async function(e,id,type){
   if(type==='photo')    upd.photographed=!v.photographed;
   if(type==='maintain'){
     upd.maintained=!v.maintained;
-    // 整備完了にしたら要整備→異常なしへ、戻したら未点検へは変えない（点検ステータスはそのまま）
-    if(!v.maintained&&v.status2==='ng')upd.status2='ok';
+    if(!v.maintained){
+      // 整備完了ON：要整備→点検済 に進める
+      if(v.status2==='ng') upd.status2='ok';
+    } else {
+      // 整備完了OFF（薄い状態→戻す）：点検済→要整備 に戻す
+      if(v.status2==='ok') upd.status2='ng';
+    }
   }
   if(type==='parts')    upd.needsParts=!v.needsParts;
   await dbUpd(`stock/${id}`,upd);
@@ -1228,6 +1293,36 @@ window.fullImgParts=async function(){
   viewPhotoById(fullImgInspId);
 };
 window.closeFullImg=function(){document.getElementById('full-img').classList.remove('open');fullImgInspId=null;};
+
+// ===== 貸出履歴 =====
+window.openHistory=function(){
+  const list=Object.values(loanHistories).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+  const el=document.getElementById('history-list');
+  if(!list.length){
+    el.innerHTML='<p style="text-align:center;color:var(--text3);padding:20px 0">履歴がありません</p>';
+  }else{
+    el.innerHTML=list.map(h=>`
+      <div style="background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);padding:10px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:14px;color:var(--text)">${h.carName}</div>
+            <div style="font-size:13px;color:var(--text2);margin-top:3px">👤 ${h.borrower}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:3px">
+              貸出：${h.outDate||'不明'} → 返却：${h.returnDate||'不明'}
+              <span style="background:var(--amber-bg);color:var(--amber);padding:1px 6px;border-radius:10px;margin-left:4px;font-weight:700">${h.days||'-'}日間</span>
+            </div>
+          </div>
+          <button class="btn btn-xs btn-danger" style="flex-shrink:0;margin-left:8px" onclick="deleteHistory('${h.id}')">削除</button>
+        </div>
+      </div>`).join('');
+  }
+  openModal('modal-history');
+};
+window.deleteHistory=async function(id){
+  if(!confirm('この履歴を削除しますか？'))return;
+  await dbDel(`loanHistories/${id}`);
+  openHistory(); // リスト再描画
+};
 
 // ===== デバッグパネル（ヘッダー長押しで表示）=====
 let debugTouchTimer=null;
