@@ -89,9 +89,18 @@
   .avail-box{border-radius:var(--radius);padding:12px;text-align:center;border:1px solid var(--border)}
   .avail-box-loaner{background:var(--green-bg);border-color:var(--green)}
   .avail-box-rental{background:var(--cyan-bg);border-color:var(--cyan)}
+  /* 空きバッジの点滅 */
+  .badge-pulse{animation:pulse 1.5s infinite}
   .avail-num{font-size:40px;font-weight:700;line-height:1}
   .avail-lbl{font-size:11px;font-weight:700;margin-top:3px}
+  /* 代車統計3ボックス（カラー背景） */
   .stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+  .stat3-box{border-radius:var(--radius-sm);padding:10px 4px;text-align:center;border:1px solid}
+  .stat3-reserved{background:var(--amber-bg);border-color:var(--amber)}
+  .stat3-out{background:var(--red-bg);border-color:var(--red)}
+  .stat3-total{background:var(--purple-bg);border-color:var(--purple)}
+  /* 代車カード：1台ずつ */
+  .loaner-card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:10px 12px;margin-bottom:8px;box-shadow:var(--shadow)}
   input[type=text],select,textarea{width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-size:13px;font-family:inherit;outline:none}
   input:focus,select:focus,textarea:focus{border-color:var(--accent)}
   .lbl{font-size:11px;color:var(--text2);margin-bottom:4px;margin-top:10px;font-weight:700}
@@ -153,7 +162,7 @@
   .spinner-wrap{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:400;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px}
   .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
-  .days-badge{display:inline-block;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:700;background:var(--amber-bg);color:var(--amber);margin-left:3px;border:1px solid var(--amber)}
+  .days-badge{display:inline-block;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:700;background:var(--pink-bg);color:var(--pink);margin-left:3px;border:1px solid var(--pink)}
   .section-header{font-size:11px;font-weight:700;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em}
 </style>
 </head>
@@ -168,7 +177,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.06</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.14</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -203,7 +212,7 @@
         <button class="btn btn-sm btn-cyan" onclick="openAddCar('rental')">＋ レンタ</button>
       </div>
     </div>
-    <div class="card" id="loaner-list"></div>
+    <div id="loaner-list"></div>
     <!-- デバッグパネル（ヘッダー長押しで表示） -->
     <div id="debug-panel" style="display:none;background:#1a0a0a;border:1px solid var(--red);border-radius:var(--radius);padding:10px;margin-top:8px">
       <div style="color:var(--red);font-size:11px;font-weight:700;margin-bottom:6px">⚠️ 非表示車両（carTypeなし）</div>
@@ -216,6 +225,8 @@
     <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
       <button class="btn btn-sm btn-primary" onclick="document.getElementById('csv-input').click()">📂 CSV読込</button>
       <input type="file" id="csv-input" accept=".csv,.CSV" style="display:none" onchange="importCSV(event)">
+      <button class="btn btn-sm btn-amber" onclick="document.getElementById('csv-update-input').click()">🔄 棚卸更新</button>
+      <input type="file" id="csv-update-input" accept=".csv,.CSV" style="display:none" onchange="importCSVUpdate(event)">
       <span style="font-size:11px;color:var(--text3)" id="csv-count"></span>
     </div>
     <!-- 統計5項目 -->
@@ -306,6 +317,20 @@
     </div>
   </div>
 </div>
+<!-- 代車情報編集モーダル（長押しで表示） -->
+<div class="modal-wrap" id="modal-edit-car">
+  <div class="modal-box"><div class="modal-handle"></div>
+    <p class="modal-title" id="edit-car-title">貸出情報を変更</p>
+    <input type="hidden" id="edit-car-id">
+    <p class="lbl">お客様名</p><input type="text" id="edit-borrower" placeholder="例：田中様">
+    <p class="lbl">貸出開始日</p><input type="text" id="edit-since" placeholder="例：05/01">
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-danger" style="flex:1" onclick="deleteFromEditModal()">削除</button>
+      <button class="btn" style="flex:1" onclick="closeModal('modal-edit-car')">閉じる</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveEditCar()">保存</button>
+    </div>
+  </div>
+</div>
 <div class="modal-wrap" id="modal-add-from-stock">
   <div class="modal-box"><div class="modal-handle"></div>
     <p class="modal-title" id="afs-title">販売車から追加</p>
@@ -359,6 +384,37 @@
     <p class="modal-title">📋 貸出履歴</p>
     <div id="history-list"></div>
     <button class="btn" style="width:100%;margin-top:12px" onclick="closeModal('modal-history')">閉じる</button>
+  </div>
+</div>
+<div class="modal-wrap" id="modal-edit-history">
+  <div class="modal-box"><div class="modal-handle"></div>
+    <p class="modal-title">履歴を編集</p>
+    <p style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px" id="edit-history-car"></p>
+    <input type="hidden" id="edit-history-id">
+    <p class="lbl">お客様名</p><input type="text" id="edit-history-borrower" placeholder="例：田中様">
+    <p class="lbl">貸出日（例：05/01）</p><input type="text" id="edit-history-outdate" placeholder="05/01">
+    <p class="lbl">返却日（例：05/05）</p><input type="text" id="edit-history-returndate" placeholder="05/05">
+    <p style="font-size:10px;color:var(--text3);margin-top:4px">※日数は貸出日と返却日から自動計算されます</p>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn" style="flex:1" onclick="closeModal('modal-edit-history')">キャンセル</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveEditHistory()">保存</button>
+    </div>
+  </div>
+</div>
+<div class="modal-wrap" id="modal-csv-update">
+  <div class="modal-box"><div class="modal-handle"></div>
+    <p class="modal-title">🔄 棚卸更新の確認</p>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">アプリにあってCSVにない車両です。納車完了にする車両をチェックしてください。</p>
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <button class="btn btn-sm btn-gray" onclick="csvUpdateCheckAll(true)">全選択</button>
+      <button class="btn btn-sm btn-gray" onclick="csvUpdateCheckAll(false)">全解除</button>
+    </div>
+    <div id="csv-update-list" style="max-height:40vh;overflow-y:auto;margin-bottom:12px"></div>
+    <p style="font-size:11px;color:var(--text3);margin-bottom:10px">※チェックあり→納車完了に変更　チェックなし→ステータス変更なし</p>
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1" onclick="closeModal('modal-csv-update')">キャンセル</button>
+      <button class="btn btn-primary" style="flex:1" onclick="applyCsvUpdate()">更新実行</button>
+    </div>
   </div>
 </div>
 
@@ -416,7 +472,7 @@ function today(){return new Date().toLocaleDateString('ja-JP',{month:'2-digit',d
 function nowTs(){return Date.now();}
 function fmt(n){return n?Number(n).toLocaleString():'';}
 function uid(){return 'i'+nowTs()+Math.random().toString(36).slice(2,6);}
-function daysSince(ts){return ts?Math.floor((Date.now()-ts)/86400000):null;}
+function daysSince(ts){return ts?Math.floor((Date.now()-ts)/86400000)+1:null;}
 
 // 半角→全角変換（色名などに使用）：半角英数・半角カナを全角に変換
 function toFullWidth(s){
@@ -496,15 +552,17 @@ function renderLoaner(){
   const lList=all.filter(c=>c.carType==='loaner').sort((a,b)=>(a.addedAt||0)-(b.addedAt||0));
   const rList=all.filter(c=>c.carType==='rental').sort((a,b)=>(a.addedAt||0)-(b.addedAt||0));
 
-  document.getElementById('loaner-avail-n').textContent=lList.filter(c=>c.status==='available').length;
-  document.getElementById('rental-avail-n').textContent=rList.filter(c=>c.status==='available').length;
+  const lAvail=lList.filter(c=>c.status==='available').length;
+  const rAvail=rList.filter(c=>c.status==='available').length;
+  document.getElementById('loaner-avail-n').textContent=lAvail;
+  document.getElementById('rental-avail-n').textContent=rAvail;
 
   const allRes=all.filter(c=>c.status==='reserved').length;
   const allOut=all.filter(c=>c.status==='out').length;
   document.getElementById('loaner-combined-stats').innerHTML=`
-    <div class="stat"><div class="stat-n" style="color:var(--amber)">${allRes}</div><div class="stat-l">予約中</div></div>
-    <div class="stat"><div class="stat-n" style="color:var(--red)">${allOut}</div><div class="stat-l">貸出中</div></div>
-    <div class="stat"><div class="stat-n" style="color:var(--text2)">${all.length}</div><div class="stat-l">総台数</div></div>`;
+    <div class="stat3-box stat3-reserved"><div class="stat-n" style="color:var(--amber)">${allRes}</div><div class="stat-l" style="color:var(--amber)">予約中</div></div>
+    <div class="stat3-box stat3-out"><div class="stat-n" style="color:var(--red)">${allOut}</div><div class="stat-l" style="color:var(--red)">貸出中</div></div>
+    <div class="stat3-box stat3-total"><div class="stat-n" style="color:var(--purple)">${all.length}</div><div class="stat-l" style="color:var(--purple)">総台数</div></div>`;
 
   // 孤立車両（carTypeなし）をデバッグパネルに反映
   const orphans=all.filter(c=>!c.carType);
@@ -520,17 +578,20 @@ function renderLoaner(){
 
   const combined=[...lList,...rList];
   const el=document.getElementById('loaner-list');
-  el.innerHTML=combined.length?combined.map(car=>carRowHTML(car)).join('')
+  el.innerHTML=combined.length
+    ?combined.map(car=>carCardHTML(car)).join('')
     :'<p style="text-align:center;color:var(--text3);padding:14px 0;font-size:12px">登録されていません</p>';
 }
 
-function carRowHTML(car){
+function carCardHTML(car){
   const isRental=car.carType==='rental';
   let badge='',btns='';
   const days=daysSince(car.outTs);
   const daysBadge=(days!==null&&car.status==='out')?`<span class="days-badge">${days}日</span>`:'';
   if(car.status==='available'){
-    badge=isRental?'<span class="badge b-rental-badge">レンタ空き</span>':'<span class="badge b-av">代車空き</span>';
+    badge=isRental
+      ?'<span class="badge b-rental-badge badge-pulse">レンタ空き</span>'
+      :'<span class="badge b-av badge-pulse">代車空き</span>';
     btns=`<button class="btn btn-sm btn-amber" onclick="openAction('${car.id}','reserve')">予約</button>
           <button class="btn btn-sm btn-primary" onclick="openAction('${car.id}','out')">貸出</button>`;
   }else if(car.status==='reserved'){
@@ -538,24 +599,34 @@ function carRowHTML(car){
     btns=`<button class="btn btn-sm btn-primary" onclick="openAction('${car.id}','out')">貸出</button>
           <button class="btn btn-sm" onclick="openAction('${car.id}','cancel')">取消</button>`;
   }else{
-    badge=`<span class="badge b-out">貸出中</span>${daysBadge}`;
+    badge='<span class="badge b-out">貸出中</span>';  // daysBadgeは2行目のみ
     btns=`<button class="btn btn-sm btn-success" onclick="openAction('${car.id}','return')">返却</button>`;
   }
-  const fb=car.fromStock?'<span class="badge b-loan-tag" style="font-size:10px">販売車兼用</span>':'';
-  const sub=car.borrower?` <span style="font-size:11px;color:var(--text3)">${car.borrower}</span>`:'';
-  // 販売車から色を取得（fromStockの場合）
+  const borrowerStr=car.borrower?`<span style="font-size:12px;color:#fff;margin-left:4px">${car.borrower}</span>`:'';
+  // 販売車から色を取得
   const stockColor=car.stockId&&stock[car.stockId]?toFullWidth(stock[car.stockId].color||''):'';
-  const colorStr=stockColor?`<span style="font-weight:600;color:#fff;margin-left:2px">${stockColor}</span>`:'';
-  return`<div class="item-row">
-    <div style="flex:1;min-width:0">
-      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${badge}${fb}<span style="font-weight:700">${car.name}</span>${colorStr}</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:2px">${car.plate||''}${sub}</div>
+  const colorStr=stockColor?`<span style="font-size:16px;font-weight:700;color:#fff;margin-left:6px">${stockColor}</span>`:'';
+  // 日数バッジは2行目のみ
+  const daysBadge2=(days!==null&&car.status==='out')?`<span class="days-badge">${days}日</span>`:'';
+  return`<div class="loaner-card" id="lc-${car.id}">
+    <!-- 1行目：ステータス＋顧客名（左）　ボタン類（右） -->
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;margin-bottom:4px">
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;flex:1;min-width:0">
+        ${badge}${borrowerStr}
+      </div>
+      <div style="display:flex;gap:4px;flex-shrink:0">${btns}</div>
     </div>
-    <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${btns}
-      <button class="btn btn-sm btn-danger" onclick="removeCar('${car.id}')">削除</button>
+    <!-- 2行目：型式＋車名＋色＋日数バッジ（クリックで編集） -->
+    <div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:4px;cursor:pointer"
+         onclick="openEditCar('${car.id}')">
+      ${(()=>{const sv=car.stockId&&stock[car.stockId];const vin=sv?.vin||car.vin||'';return vin&&vin.includes('-')?`<span style="font-size:16px;font-weight:700;color:var(--text)">${vin.split('-')[0].slice(0,6)}</span>`:''})()}
+      <span style="font-size:16px;font-weight:700;color:var(--text)">${car.name}</span>${colorStr}${daysBadge2}
+      <span style="font-size:10px;color:var(--text3);margin-left:2px">✏️</span>
     </div>
   </div>`;
 }
+// 旧carRowHTMLは削除（後方互換のためcarRowHTMLもcarCardHTMLに委譲）
+function carRowHTML(car){return carCardHTML(car);}
 
 window.openAction=function(carId,action){
   selectedCarId=carId;
@@ -627,6 +698,67 @@ window.addCar=async function(){
   document.getElementById('nc-name').value='';document.getElementById('nc-plate').value='';
   closeModal('modal-add-car');
 };
+window.openEditCar=function(id){
+  const car=cars[id];if(!car)return;
+  document.getElementById('edit-car-id').value=id;
+  document.getElementById('edit-car-title').textContent=`${car.name}`;
+  document.getElementById('edit-borrower').value=car.borrower||'';
+  document.getElementById('edit-since').value=car.since||'';
+  openModal('modal-edit-car');
+};
+window.deleteFromEditModal=async function(){
+  const id=document.getElementById('edit-car-id').value;
+  const car=cars[id];if(!car)return;
+  if(!confirm(`「${car.name}」を削除しますか？`))return;
+  closeModal('modal-edit-car');
+  await removeCar(id);
+};
+// 長押し検出（タッチ・右クリック）
+let loanerTouchTimer=null;
+window.loanerTouchStart=function(id){loanerTouchTimer=setTimeout(()=>openEditCar(id),700);};
+window.loanerTouchEnd=function(){clearTimeout(loanerTouchTimer);};
+window.openCarCtxMenu=function(id){openEditCar(id);};
+window.saveEditCar=async function(){
+  const id=document.getElementById('edit-car-id').value;
+  const borrower=document.getElementById('edit-borrower').value.trim();
+  const sinceRaw=document.getElementById('edit-since').value.trim();
+  if(!id)return;
+  const since=formatDateInput(sinceRaw);
+  const upd={borrower:borrower||null,since:since||null};
+  // 貸出日が変更されたらoutTsも再計算（日数バッジを正確にするため）
+  if(since){
+    const outTs=parseDateToTs(since);
+    if(outTs)upd.outTs=outTs;
+  }
+  await dbUpd(`cars/${id}`,upd);
+  closeModal('modal-edit-car');
+};
+
+// 日付入力を MM/DD 形式に正規化（0509→05/09、5/9→05/09）
+function formatDateInput(s){
+  if(!s)return '';
+  // 数字4桁：MMDDとみなす
+  let m=s.match(/^(\d{2})(\d{2})$/);
+  if(m)return`${m[1]}/${m[2]}`;
+  m=s.match(/^(\d{1})(\d{2})$/);// 3桁 M DD
+  if(m)return`0${m[1]}/${m[2]}`;
+  // スラッシュ区切り
+  m=s.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
+  if(m)return`${String(m[1]).padStart(2,'0')}/${String(m[2]).padStart(2,'0')}`;
+  return s;
+}
+
+// MM/DD 文字列を今年のタイムスタンプに変換
+function parseDateToTs(mmdd){
+  if(!mmdd)return null;
+  const m=mmdd.match(/^(\d{2})\/(\d{2})$/);
+  if(!m)return null;
+  const now=new Date();
+  const d=new Date(now.getFullYear(),parseInt(m[1])-1,parseInt(m[2]),0,0,0);
+  // 未来日の場合は去年として扱う
+  if(d>now)d.setFullYear(d.getFullYear()-1);
+  return d.getTime();
+}
 window.removeCar=async function(id){
   const car=cars[id];if(!car)return;
   if(!confirm(`「${car.name}」を代車一覧から削除しますか？\n${car.fromStock?'販売車のステータスは「店頭在庫」に戻ります。':''}` ))return;
@@ -656,7 +788,7 @@ window.addFromStock=async function(vid){
   if(Object.values(cars).some(c=>c.stockId===vid)){alert('すでに登録されています');return;}
   const id=uid();const newS1=addCarType==='rental'?'rental':'loaner';
   await Promise.all([
-    dbSet(`cars/${id}`,{id,name:v.name,plate:v.regNo||'未登録',status:'available',carType:addCarType,fromStock:true,stockId:vid,addedAt:nowTs()}),
+    dbSet(`cars/${id}`,{id,name:v.name,plate:v.regNo||'',status:'available',carType:addCarType,fromStock:true,stockId:vid,addedAt:nowTs()}),
     dbUpd(`stock/${vid}`,{isLoaner:true,status1:newS1})
   ]);
   openAddFromStock(addCarType);
@@ -666,7 +798,7 @@ window.addFromStockDirect=async function(vid,type){
   if(Object.values(cars).some(c=>c.stockId===vid)){alert('すでに代車登録されています');return;}
   const id=uid();const newS1=type==='rental'?'rental':'loaner';
   await Promise.all([
-    dbSet(`cars/${id}`,{id,name:v.name,plate:v.regNo||'未登録',status:'available',carType:type||'loaner',fromStock:true,stockId:vid,addedAt:nowTs()}),
+    dbSet(`cars/${id}`,{id,name:v.name,plate:v.regNo||'',status:'available',carType:type||'loaner',fromStock:true,stockId:vid,addedAt:nowTs()}),
     dbUpd(`stock/${vid}`,{isLoaner:true,status1:newS1})
   ]);
   closeModal('modal-stock-detail');alert(`「${v.name}」を${type==='rental'?'レンタカー':'代車'}に追加しました`);
@@ -859,15 +991,16 @@ window.renderStock=function(){
             <span class="badge ${s2i.cls}">${s2i.label}</span>
             ${v.needsParts?'<span class="badge b-parts" style="font-size:10px">🔩部品待ち</span>':''}
           </div>
-          <!-- 2行目：車名＋色＋補足テキスト -->
+          <!-- 2行目：型式＋車名＋色＋補足テキスト -->
           <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;cursor:pointer" onclick="openStockDetail('${v.id}')">
+            ${v.vin&&v.vin.includes('-')?`<span style="font-size:18px;font-weight:700;color:var(--text)">${v.vin.split('-')[0].slice(0,6)}</span>`:''}
             <span style="font-size:18px;font-weight:700;color:var(--text)">${v.name||'不明'}</span>
             ${v.color?`<span style="font-size:18px;font-weight:700;color:#fff">${toFullWidth(v.color)}</span>`:''}
             ${v.displayNote?`<span style="font-size:13px;color:var(--text2);font-weight:500">${v.displayNote}</span>`:''}
           </div>
-          <!-- 3行目：仕入日・仕入先・仕入金額 -->
+          <!-- 3行目：仕入日・仕入先・合計金額 -->
           <div style="font-size:11px;color:var(--text2);margin-top:3px;cursor:pointer" onclick="openStockDetail('${v.id}')">
-            ${v.date?`仕入 ${v.date}`:''}${v.sup?` / ${v.sup}`:''}${v.price?` / ¥${fmt(v.price)}`:''}
+            ${v.date?`仕入 ${v.date}`:''}${v.sup?` / ${v.sup}`:''}${v.total?` / ¥${fmt(v.total)}`:''}
           </div>
           <!-- 4行目：年式（和暦）・車台番号 -->
           <div style="font-size:11px;color:var(--text3);margin-top:1px;cursor:pointer" onclick="openStockDetail('${v.id}')">
@@ -1074,7 +1207,121 @@ window.saveSD=async function(id){
   await dbUpd(`stock/${id}`,upd);closeModal('modal-stock-detail');
 };
 
-// ===== 点検シート =====
+// ===== 棚卸CSV更新（重複→情報上書きステータス保持、未掲載→納車完了確認）=====
+let csvUpdatePendingData={}; // {id: vehicleData} 今回のCSVデータ
+let csvUpdateMissingIds=[]; // アプリにあってCSVにないID
+
+window.importCSVUpdate=function(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{parseCSVUpdate(ev.target.result);e.target.value='';};
+  reader.readAsText(file,'Shift-JIS');
+};
+
+function parseCSVUpdate(text){
+  text=text.replace(/^\uFEFF/,'');
+  const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+  let hi=8;
+  for(let i=0;i<Math.min(15,lines.length);i++){
+    if(lines[i].includes('車名')&&lines[i].includes('車台番号')){hi=i;break;}
+  }
+  const hdrs=parseLine(lines[hi]).map(h=>h.replace(/"/g,'').trim());
+  const fi=(...c)=>{for(const x of c){const i=hdrs.indexOf(x);if(i>=0)return i;}return -1;};
+  const idx={
+    date:fi('仕入日'),cdate:fi('契約日'),ddate:fi('納車日'),sdate:fi('売上日'),
+    num:fi('車両仕入番号'),seiri:fi('車両整理番号','整理番号'),
+    staff:fi('仕入担当名'),name:fi('車名'),sup:fi('仕入先名'),
+    color:fi('色'),vin:fi('車台番号'),year:fi('年式'),
+    shaken:fi('車検期限'),equip:fi('装備品'),price:fi('仕入金額'),total:fi('合計'),
+  };
+  const g=(row,i)=>i>=0&&i<row.length?row[i].replace(/^"|"$/g,'').trim():'';
+
+  // CSVデータを車台番号でマップ化
+  const csvVins=new Map(); // vin→csvRowData
+  for(let i=hi+1;i<lines.length;i++){
+    const row=parseLine(lines[i]);if(!row||row.length<5)continue;
+    const first=g(row,0);
+    if(!first||!/^(平成|令和|昭和|\d{4})/.test(first))continue;
+    const vin=g(row,idx.vin);
+    if(vin) csvVins.set(vin,{
+      date:fmtDate(g(row,idx.date)),cdate:fmtDate(g(row,idx.cdate)),
+      ddate:fmtDate(g(row,idx.ddate)),sdate:fmtDate(g(row,idx.sdate)),
+      num:g(row,idx.num),seiri:g(row,idx.seiri),staff:g(row,idx.staff),
+      name:kana2full(g(row,idx.name)),sup:g(row,idx.sup),
+      color:g(row,idx.color),vin,year:fmtDate(g(row,idx.year)),
+      shaken:fmtDate(g(row,idx.shaken)),equip:g(row,idx.equip),
+      price:g(row,idx.price),total:g(row,idx.total),
+    });
+  }
+
+  if(csvVins.size===0){alert('CSVのデータを読み取れませんでした');return;}
+
+  // アプリ内の車両と照合
+  const appVehicles=Object.values(stock);
+  const missing=[]; // アプリにあってCSVにない車両
+  const updates=[]; // 重複（車台番号一致）→情報上書き用
+
+  for(const v of appVehicles){
+    if(v.vin&&csvVins.has(v.vin)){
+      updates.push({appId:v.id,csvData:csvVins.get(v.vin)});
+    } else {
+      missing.push(v);
+    }
+  }
+
+  csvUpdatePendingData={updates,csvVins};
+  csvUpdateMissingIds=missing.map(v=>v.id);
+
+  if(missing.length===0){
+    // 未掲載なし→上書きのみ確認
+    if(!confirm(`CSV照合完了\n上書き更新: ${updates.length}台\n未掲載（納車完了候補）: 0台\n\n上書き更新を実行しますか？`))return;
+    applyCsvUpdateDirect(updates);
+    return;
+  }
+
+  // 確認モーダルを表示
+  const el=document.getElementById('csv-update-list');
+  el.innerHTML=missing.map(v=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <input type="checkbox" class="csv-update-chk" data-id="${v.id}" checked style="width:18px;height:18px;accent-color:var(--accent)">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:13px;color:var(--text)">${v.name||'不明'} ${v.color?toFullWidth(v.color):''}</div>
+        <div style="font-size:11px;color:var(--text3)">${v.vin||''} / ${v.date||''} / <span class="badge ${(S1[v.status1||'undelivered']||S1.undelivered).cls}" style="font-size:10px">${(S1[v.status1||'undelivered']||S1.undelivered).label}</span></div>
+      </div>
+    </div>`).join('');
+  openModal('modal-csv-update');
+}
+
+window.csvUpdateCheckAll=function(checked){
+  document.querySelectorAll('.csv-update-chk').forEach(cb=>cb.checked=checked);
+};
+
+window.applyCsvUpdate=async function(){
+  const {updates}=csvUpdatePendingData;
+  // チェックされた未掲載車両を納車完了に
+  const toDeliver=Array.from(document.querySelectorAll('.csv-update-chk:checked')).map(cb=>cb.dataset.id);
+  showLoading('棚卸更新中...');
+  const promises=[];
+  // 重複車両：CSVデータで上書き（ステータス等は保持）
+  for(const {appId,csvData} of updates){
+    promises.push(dbUpd(`stock/${appId}`,csvData));
+  }
+  // 未掲載チェックあり→納車完了
+  for(const id of toDeliver){
+    promises.push(dbUpd(`stock/${id}`,{status1:'delivered'}));
+  }
+  await Promise.all(promises);
+  closeModal('modal-csv-update');
+  hideLoading();
+  alert(`棚卸更新完了\n情報上書き: ${updates.length}台\n納車完了に変更: ${toDeliver.length}台`);
+};
+
+async function applyCsvUpdateDirect(updates){
+  showLoading('棚卸更新中...');
+  await Promise.all(updates.map(({appId,csvData})=>dbUpd(`stock/${appId}`,csvData)));
+  hideLoading();
+  alert(`棚卸更新完了\n情報上書き: ${updates.length}台`);
+}
 let selectedUpVehicleId=null;
 
 window.openUpload=function(){
@@ -1245,19 +1492,35 @@ function renderInspections(){
   noP.classList.add('hidden');
   grid.innerHTML=list.map(ins=>{
     const chk=inspCheckedIds.has(ins.id)?'checked':'';
+    const v=ins.vehicleId?stock[ins.vehicleId]:null;
+    const hasParts=v?.needsParts||false;
+    const partsBtn=ins.vehicleId?`<button class="btn btn-xs ${hasParts?'btn-pink':'btn-gray'}" style="${hasParts?'animation:pulse 1.5s infinite':''}" onclick="toggleInspParts('${ins.id}',event)">${hasParts?'🔩部品あり':'部品注文'}</button>`:'';
     return`<div class="photo-card${chk?' checked':''}" data-id="${ins.id}">
       <input type="checkbox" class="photo-chk" data-id="${ins.id}" ${chk} onchange="toggleInspCheck('${ins.id}',this.checked)">
       <img src="${ins.photoUrl}" loading="lazy" alt="${ins.carName}" onclick="viewPhotoById('${ins.id}')">
       <div class="photo-info">
         <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)">${ins.carName}</div>
-        <div style="font-size:10px;color:var(--text3)">${ins.date}${ins.needRepair?'<span style="color:var(--red)"> ⚠️</span>':''}${ins.memo?' · '+ins.memo:''}</div>
+        <div style="font-size:10px;color:var(--text3)">${ins.date}${ins.needsParts?'<span style="color:var(--pink)"> 🔩</span>':''}${ins.memo?' · '+ins.memo:''}</div>
+        ${partsBtn?`<div style="margin-top:4px">${partsBtn}</div>`:''}
       </div>
     </div>`;
   }).join('');
   updateInspBulkBar();
 }
 
-// 画像拡大（削除・整備完了・必要部品ありボタン付き）
+// 点検シートカードの部品注文ボタン（登録時と同じ挙動：needsParts→true、status2→ng）
+window.toggleInspParts=async function(inspId,e){
+  e.stopPropagation();
+  const ins=inspections[inspId];if(!ins||!ins.vehicleId)return;
+  const v=stock[ins.vehicleId];if(!v)return;
+  const newVal=!v.needsParts;
+  const upd={needsParts:newVal};
+  // 部品注文ONなら点検済→要整備に（登録時と同じ挙動）
+  if(newVal) upd.status2='ng';
+  await dbUpd(`stock/${ins.vehicleId}`,upd);
+  // 点検シート自体のneedsPartsフラグも更新
+  await dbUpd(`inspections/${inspId}`,{needsParts:newVal});
+};
 window.viewPhotoById=function(id){
   const ins=inspections[id];if(!ins)return;
   fullImgInspId=id;
@@ -1318,12 +1581,12 @@ window.openHistory=function(){
     el.innerHTML=list.map(h=>`
       <div style="background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);padding:10px;margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:700;font-size:14px;color:var(--text)">${h.carName}</div>
+          <div style="flex:1;min-width:0;cursor:pointer" onclick="openEditHistory('${h.id}')">
+            <div style="font-weight:700;font-size:14px;color:var(--text)">${h.carName} <span style="font-size:10px;color:var(--text3)">✏️</span></div>
             <div style="font-size:13px;color:var(--text2);margin-top:3px">👤 ${h.borrower}</div>
             <div style="font-size:11px;color:var(--text3);margin-top:3px">
               貸出：${h.outDate||'不明'} → 返却：${h.returnDate||'不明'}
-              <span style="background:var(--amber-bg);color:var(--amber);padding:1px 6px;border-radius:10px;margin-left:4px;font-weight:700">${h.days||'-'}日間</span>
+              <span style="background:var(--pink-bg);color:var(--pink);padding:1px 6px;border-radius:10px;margin-left:4px;font-weight:700;border:1px solid var(--pink)">${h.days||'-'}日間</span>
             </div>
           </div>
           <button class="btn btn-xs btn-danger" style="flex-shrink:0;margin-left:8px" onclick="deleteHistory('${h.id}')">削除</button>
@@ -1335,7 +1598,32 @@ window.openHistory=function(){
 window.deleteHistory=async function(id){
   if(!confirm('この履歴を削除しますか？'))return;
   await dbDel(`loanHistories/${id}`);
-  openHistory(); // リスト再描画
+  openHistory();
+};
+window.openEditHistory=function(id){
+  const h=loanHistories[id];if(!h)return;
+  document.getElementById('edit-history-id').value=id;
+  document.getElementById('edit-history-car').textContent=h.carName;
+  document.getElementById('edit-history-borrower').value=h.borrower||'';
+  document.getElementById('edit-history-outdate').value=h.outDate||'';
+  document.getElementById('edit-history-returndate').value=h.returnDate||'';
+  openModal('modal-edit-history');
+};
+window.saveEditHistory=async function(){
+  const id=document.getElementById('edit-history-id').value;
+  const borrower=document.getElementById('edit-history-borrower').value.trim();
+  const outRaw=document.getElementById('edit-history-outdate').value.trim();
+  const returnRaw=document.getElementById('edit-history-returndate').value.trim();
+  const outDate=formatDateInput(outRaw);
+  const returnDate=formatDateInput(returnRaw);
+  // 日数再計算（初日算入）
+  let days=loanHistories[id]?.days||1;
+  const oTs=parseDateToTs(outDate);
+  const rTs=parseDateToTs(returnDate);
+  if(oTs&&rTs&&rTs>=oTs) days=Math.max(1,Math.floor((rTs-oTs)/86400000)+1);
+  await dbUpd(`loanHistories/${id}`,{borrower,outDate,returnDate,days});
+  closeModal('modal-edit-history');
+  openHistory();
 };
 
 // ===== デバッグパネル（ヘッダー長押しで表示）=====
