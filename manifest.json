@@ -1,0 +1,21 @@
+{
+  "name": "ciel autoworks 中古車管理",
+  "short_name": "ciel autoworks",
+  "description": "ciel autoworks 中古車管理システム",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0F1117",
+  "theme_color": "#0F1117",
+  "icons": [
+    {
+      "src": "ciel_autoworks_192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "ciel_autoworks_512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
