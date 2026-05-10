@@ -197,18 +197,18 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.32</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.34</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
   <div class="tabs">
-    <div class="tab active" onclick="switchTab('loaner')">代車/レンタ</div>
-    <div class="tab" onclick="switchTab('stock')">販売車</div>
+    <div class="tab" onclick="switchTab('loaner')">代車/レンタ</div>
+    <div class="tab active" onclick="switchTab('stock')">販売車</div>
     <div class="tab" onclick="switchTab('inspection')">点検シート</div>
   </div>
 
   <!-- 代車/レンタタブ -->
-  <div id="tab-loaner" class="content">
+  <div id="tab-loaner" class="content hidden">
     <!-- 空き台数：左右2分割 -->
     <div class="avail-row">
       <div class="avail-box avail-box-loaner" id="loaner-avail-box" style="cursor:pointer" onclick="toggleLoanerFilter('loaner_available')">
@@ -241,13 +241,13 @@
   </div>
 
   <!-- 販売車タブ -->
-  <div id="tab-stock" class="content hidden">
+  <div id="tab-stock" class="content">
     <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
       <button class="btn btn-sm btn-primary" onclick="document.getElementById('csv-input').click()">📂 CSV読込</button>
       <input type="file" id="csv-input" accept=".csv,.CSV" style="display:none" onchange="importCSV(event)">
       <button class="btn btn-sm btn-amber" onclick="document.getElementById('csv-update-input').click()">🔄 棚卸更新</button>
       <input type="file" id="csv-update-input" accept=".csv,.CSV" style="display:none" onchange="importCSVUpdate(event)">
-      <span style="font-size:11px;color:var(--text3)" id="csv-count"></span>
+      <span style="font-size:11px;color:#fff;font-weight:600" id="csv-count"></span><span style="font-size:11px;color:#fff;font-weight:600;margin-left:6px" id="filter-count"></span>
     </div>
     <!-- 統計5項目 -->
     <div class="stats5" id="stock-stats"></div>
@@ -282,7 +282,14 @@
       <input type="text" id="stock-search" placeholder="車名・色・仕入先など部分一致..." oninput="renderStock()">
       <select id="stock-filter" onchange="renderStock()" style="font-size:11px">
         <option value="">すべて</option>
-        <optgroup label="ステータス①">
+        <optgroup label="▼絞り込み">
+          <option value="parts">部品待ち</option>
+          <option value="no_photo">撮影未完了</option>
+          <option value="no_clean">清掃未完了</option>
+          <option value="no_maint">整備未完了</option>
+          <option value="no_insp">画像未登録</option>
+        </optgroup>
+        <optgroup label="▼ステータス①">
           <option value="s1_undelivered">未着</option>
           <option value="s1_floor">店頭在庫</option>
           <option value="s1_loaner">代車</option>
@@ -291,14 +298,11 @@
           <option value="s1_sold">納車待ち</option>
           <option value="s1_delivered">納車完了</option>
         </optgroup>
-        <optgroup label="ステータス②">
+        <optgroup label="▼ステータス②">
           <option value="s2_none">未点検</option>
           <option value="s2_ng">要整備</option>
           <option value="s2_ok">点検済</option>
           <option value="s2_skip">点検不要</option>
-        </optgroup>
-        <optgroup label="その他">
-          <option value="parts">部品待ち</option>
         </optgroup>
       </select>
     </div>
@@ -581,7 +585,7 @@ function startListeners(){
 async function dbSet(p,d){setSyncSt('● 保存中...','saving');await set(ref(db,p),d);}
 async function dbUpd(p,d){setSyncSt('● 保存中...','saving');await update(ref(db,p),d);}
 async function dbDel(p){setSyncSt('● 保存中...','saving');await remove(ref(db,p));}
-function updateCsvCount(){const n=Object.keys(stock).length;document.getElementById('csv-count').textContent=n?`全${n}台`:'';};
+function updateCsvCount(){const n=Object.keys(stock).length;document.getElementById('csv-count').textContent=n?`全${n}台`:'';document.getElementById('filter-count').textContent='';};
 
 window.switchTab=function(tab){
   ['loaner','stock','inspection'].forEach(t=>document.getElementById('tab-'+t).classList.toggle('hidden',t!==tab));
@@ -1021,7 +1025,31 @@ window.renderStock=function(){
   });
   if(q)list=list.filter(v=>[v.name,v.vin,v.color,v.sup,v.year,v.staff,v.regNo]
     .some(fld=>normalizeQ(fld||'').includes(q)));
-  if(f==='parts')list=list.filter(v=>v.needsParts);
+  if(f==='parts')     list=list.filter(v=>v.needsParts);
+  else if(f==='no_photo') list=list.filter(v=>{
+    const s1=v.status1||'undelivered';
+    const s2=v.status2||'none';
+    if(s1==='undelivered'||s1==='delivered'||s2==='skip') return false;
+    if(s1==='sold') return false;
+    return !v.photographed;
+  });
+  else if(f==='no_clean') list=list.filter(v=>{
+    const s1=v.status1||'undelivered';
+    const s2=v.status2||'none';
+    if(s1==='undelivered'||s1==='delivered'||s2==='skip') return false;
+    return !v.cleaned;
+  });
+  else if(f==='no_maint') list=list.filter(v=>{
+    const s1=v.status1||'undelivered';
+    const s2=v.status2||'none';
+    if(s1==='undelivered'||s1==='delivered'||s2==='skip') return false;
+    return !v.maintained;
+  });
+  else if(f==='no_insp') list=list.filter(v=>{
+    const s1=v.status1||'undelivered';
+    if(s1==='undelivered'||s1==='delivered'||(v.status2||'none')==='skip') return false;
+    return !Object.values(inspections).some(i=>i.vehicleId===v.id);
+  });
   else if(f.startsWith('s1_'))list=list.filter(v=>(v.status1||'undelivered')===f.slice(3));
   else if(f.startsWith('s2_'))list=list.filter(v=>(v.status2||'none')===f.slice(3));
   // 統計BOXフィルター
@@ -1032,6 +1060,14 @@ window.renderStock=function(){
     if(stockStatFilter==='uninsp')  list=list.filter(v=>(v.status2||'none')==='none'&&(v.status1||'undelivered')!=='undelivered');
     if(stockStatFilter==='repair')  list=list.filter(v=>(v.status2||'none')==='ng');
     if(stockStatFilter==='sold')    list=list.filter(v=>(v.status1||'undelivered')==='sold');
+  }
+
+  // 絞込台数表示
+  const total=Object.keys(stock).length;
+  const filterEl=document.getElementById('filter-count');
+  if(filterEl){
+    const isFiltered=q||f||stockStatFilter;
+    filterEl.textContent=isFiltered?`絞込${list.length}台`:'';
   }
 
   const el=document.getElementById('stock-list');
