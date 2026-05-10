@@ -89,8 +89,14 @@
   .sold-alert{animation:sold-pulse 1.5s infinite;border-color:var(--pink)!important}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
   /* 統計 */
-  .stats5{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:10px}
-  .stat{background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);padding:8px 4px;text-align:center}
+  .stats5{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:10px}
+  .stat{border-radius:var(--radius-sm);padding:8px 4px;text-align:center;border:1px solid}
+  .stat-undelivered{background:var(--purple-bg);border-color:var(--purple)}
+  .stat-floor{background:var(--green-bg);border-color:var(--green)}
+  .stat-listing{background:var(--blue-bg);border-color:var(--blue)}
+  .stat-uninsp{background:var(--red-bg);border-color:var(--red)}
+  .stat-repair{background:var(--orange-bg);border-color:var(--orange)}
+  .stat-sold{background:var(--pink-bg);border-color:var(--pink)}
   .stat-n{font-size:20px;font-weight:700}
   .stat-l{font-size:9px;color:var(--text3);margin-top:2px}
   /* 代車空き表示 */
@@ -189,7 +195,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.30</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.31</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -677,7 +683,7 @@ function carCardHTML(car){
   const borrowerStr=car.borrower?`<span style="font-size:12px;color:#fff;margin-left:4px">${car.borrower}</span>`:'';
   // 販売車から色を取得
   const stockColor=car.stockId&&stock[car.stockId]?toFullWidth(stock[car.stockId].color||''):'';
-  const colorStr=stockColor?`<span style="font-size:16px;font-weight:700;color:#fff;margin-left:6px">${stockColor}</span>`:'';
+  const colorStr=stockColor?`<span style="font-size:16px;font-weight:700;color:#fff">${stockColor}</span>`:'';
   // 日数バッジは2行目のみ
   const daysBadge2=(days!==null&&car.status==='out')?`<span class="days-badge">${days}日</span>`:'';
   return`<div class="loaner-card" id="lc-${car.id}">
@@ -693,7 +699,6 @@ function carCardHTML(car){
          onclick="openEditCar('${car.id}')">
       ${(()=>{const sv=car.stockId&&stock[car.stockId];const vin=sv?.vin||car.vin||'';return vin&&vin.includes('-')?`<span style="font-size:16px;font-weight:700;color:var(--text)">${vin.split('-')[0].slice(0,6)}</span>`:''})()}
       <span style="font-size:16px;font-weight:700;color:var(--text)">${car.name}</span>${colorStr}${daysBadge2}
-      <span style="font-size:10px;color:var(--text3);margin-left:2px">✏️</span>
     </div>
   </div>`;
 }
@@ -978,6 +983,7 @@ function fmtDate(s){
 // ===== 販売車統計（5項目）=====
 function renderStockStats(){
   const list=Object.values(stock);
+  const undelivered=list.filter(v=>(v.status1||'undelivered')==='undelivered').length;
   const floor=list.filter(v=>(v.status1||'undelivered')==='floor').length;
   const listing=list.filter(v=>(v.status1||'undelivered')==='listing').length;
   const uninsp=list.filter(v=>(v.status2||'none')==='none'&&(v.status1||'undelivered')!=='undelivered').length;
@@ -985,11 +991,12 @@ function renderStockStats(){
   const sold=list.filter(v=>(v.status1||'undelivered')==='sold').length;
   const fA=f=>stockStatFilter===f?'outline:2px solid #fff;':'';
   document.getElementById('stock-stats').innerHTML=`
-    <div class="stat" style="cursor:pointer;${fA('floor')}" onclick="toggleStockStatFilter('floor')"><div class="stat-n" style="color:var(--green)">${floor}</div><div class="stat-l">在庫</div></div>
-    <div class="stat" style="cursor:pointer;${fA('listing')}" onclick="toggleStockStatFilter('listing')"><div class="stat-n" style="color:var(--blue)">${listing}</div><div class="stat-l">出品中</div></div>
-    <div class="stat" style="cursor:pointer;${fA('uninsp')}" onclick="toggleStockStatFilter('uninsp')"><div class="stat-n" style="color:var(--red)">${uninsp}</div><div class="stat-l">未点検</div></div>
-    <div class="stat" style="cursor:pointer;${fA('repair')}" onclick="toggleStockStatFilter('repair')"><div class="stat-n" style="color:var(--orange)">${repair}</div><div class="stat-l">要整備</div></div>
-    <div class="stat" style="cursor:pointer;${fA('sold')}" onclick="toggleStockStatFilter('sold')"><div class="stat-n" style="color:var(--pink)">${sold}</div><div class="stat-l">納車待ち</div></div>`;
+    <div class="stat stat-undelivered" style="cursor:pointer;${fA('undelivered')}" onclick="toggleStockStatFilter('undelivered')"><div class="stat-n" style="color:var(--purple)">${undelivered}</div><div class="stat-l" style="color:var(--purple)">未着</div></div>
+    <div class="stat stat-floor" style="cursor:pointer;${fA('floor')}" onclick="toggleStockStatFilter('floor')"><div class="stat-n" style="color:var(--green)">${floor}</div><div class="stat-l" style="color:var(--green)">在庫</div></div>
+    <div class="stat stat-listing" style="cursor:pointer;${fA('listing')}" onclick="toggleStockStatFilter('listing')"><div class="stat-n" style="color:var(--blue)">${listing}</div><div class="stat-l" style="color:var(--blue)">出品中</div></div>
+    <div class="stat stat-uninsp" style="cursor:pointer;${fA('uninsp')}" onclick="toggleStockStatFilter('uninsp')"><div class="stat-n" style="color:var(--red)">${uninsp}</div><div class="stat-l" style="color:var(--red)">未点検</div></div>
+    <div class="stat stat-repair" style="cursor:pointer;${fA('repair')}" onclick="toggleStockStatFilter('repair')"><div class="stat-n" style="color:var(--orange)">${repair}</div><div class="stat-l" style="color:var(--orange)">要整備</div></div>
+    <div class="stat stat-sold" style="cursor:pointer;${fA('sold')}" onclick="toggleStockStatFilter('sold')"><div class="stat-n" style="color:var(--pink)">${sold}</div><div class="stat-l" style="color:var(--pink)">納車待ち</div></div>`;
 }
 window.toggleStockStatFilter=function(f){
   stockStatFilter=stockStatFilter===f?null:f;
@@ -1017,6 +1024,7 @@ window.renderStock=function(){
   else if(f.startsWith('s2_'))list=list.filter(v=>(v.status2||'none')===f.slice(3));
   // 統計BOXフィルター
   if(stockStatFilter){
+    if(stockStatFilter==='undelivered') list=list.filter(v=>(v.status1||'undelivered')==='undelivered');
     if(stockStatFilter==='floor')   list=list.filter(v=>(v.status1||'undelivered')==='floor');
     if(stockStatFilter==='listing') list=list.filter(v=>(v.status1||'undelivered')==='listing');
     if(stockStatFilter==='uninsp')  list=list.filter(v=>(v.status2||'none')==='none'&&(v.status1||'undelivered')!=='undelivered');
