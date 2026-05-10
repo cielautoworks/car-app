@@ -180,7 +180,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.16</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.17</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -1056,7 +1056,7 @@ window.renderStock=function(){
           <!-- アクションボタン横並び＋画像登録ボタン -->
           <div onclick="event.stopPropagation()" style="display:flex;align-items:flex-end;gap:5px;flex-wrap:wrap">
             <div style="flex:1">${btnsHtml}</div>
-            <button class="action-btn action-btn-insp ${ic?'done':''}" onclick="openUploadForStock('${v.id}')">画像<br>登録</button>
+            ${s1!=='undelivered'&&s1!=='delivered'?`<button class="action-btn action-btn-insp ${ic?'done':''}" onclick="openUploadForStock('${v.id}')">画像<br>登録</button>`:''}
           </div>
         </div>
       </div>
