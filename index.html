@@ -182,7 +182,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.23</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.24</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -980,7 +980,12 @@ function renderStockStats(){
 
 // ===== 販売車一覧 =====
 window.renderStock=function(){
-  const q=(document.getElementById('stock-search')?.value||'').toLowerCase();
+  // 全角英数字・全角スペースを半角に正規化してから検索
+  function normalizeQ(s){
+    return s.replace(/[Ａ-Ｚａ-ｚ０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0))
+            .replace(/　/g,' ').toLowerCase();
+  }
+  const q=normalizeQ(document.getElementById('stock-search')?.value||'');
   const f=document.getElementById('stock-filter')?.value||'';
   let list=Object.values(stock).sort((a,b)=>{
     const da=a.date||'',db2=b.date||'';
@@ -988,7 +993,7 @@ window.renderStock=function(){
     return da>db2?-1:1;
   });
   if(q)list=list.filter(v=>[v.name,v.vin,v.color,v.sup,v.year,v.staff,v.regNo]
-    .some(fld=>(fld||'').toLowerCase().includes(q)));
+    .some(fld=>normalizeQ(fld||'').includes(q)));
   if(f==='parts')list=list.filter(v=>v.needsParts);
   else if(f.startsWith('s1_'))list=list.filter(v=>(v.status1||'undelivered')===f.slice(3));
   else if(f.startsWith('s2_'))list=list.filter(v=>(v.status2||'none')===f.slice(3));
