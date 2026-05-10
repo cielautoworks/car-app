@@ -78,7 +78,7 @@
   .b-insp-skip{background:var(--gray-bg);color:var(--gray);border:1px solid var(--gray)}
   .b-loan-tag{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber)}
   /* 部品注文バッジ */
-  .b-parts{background:var(--pink-bg);color:var(--pink);border:2px solid var(--pink);animation:pulse 1.5s infinite}
+  .b-parts{background:var(--red-bg);color:var(--red);border:2px solid var(--red);animation:pulse 1.5s infinite}
   /* 出品票登録済バッジ */
   .b-ad{background:#2C2200;color:#FFD600;border:1px solid #FFD600}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
@@ -183,7 +183,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.25</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.26</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -1066,7 +1066,7 @@ window.renderStock=function(){
           <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px;cursor:pointer" onclick="openStockDetail('${v.id}')">
             <span class="badge ${s1i.cls}">${s1i.label}</span>
             ${s2i?`<span class="badge ${s2i.cls}">${s2i.label}</span>`:''}
-            ${v.needsParts?'<span class="badge b-parts" style="font-size:10px">🔩部品待ち</span>':''}
+            ${v.needsParts?'<span class="badge b-parts" style="font-size:10px">🔩部品注文</span>':''}
             ${hasListing?'<span class="badge b-ad">AA</span>':''}
           </div>
           <!-- 2行目：型式＋車名＋色＋補足テキスト＋📋ボタン -->
@@ -1535,8 +1535,13 @@ window.selectVehicleFromQuick=function(vid){
 window.searchVehicles=function(q){
   const res=document.getElementById('vehicle-search-results');
   if(!q){res.style.display='none';return;}
+  function normalizeQ(s){
+    return s.replace(/[Ａ-Ｚａ-ｚ０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0))
+            .replace(/　/g,' ').toLowerCase();
+  }
+  const nq=normalizeQ(q);
   const matches=Object.values(stock)
-    .filter(v=>[v.name,v.vin,v.color,v.sup].some(f=>(f||'').toLowerCase().includes(q.toLowerCase())))
+    .filter(v=>[v.name,v.vin,v.color,v.sup].some(f=>normalizeQ(f||'').includes(nq)))
     .sort((a,b)=>{const da=a.date||'',db=b.date||'';return da>db?-1:1;})
     .slice(0,20);
   if(!matches.length){res.style.display='none';return;}
@@ -1667,13 +1672,17 @@ function renderInspections(){
     const chk=inspCheckedIds.has(ins.id)?'checked':'';
     const v=ins.vehicleId?stock[ins.vehicleId]:null;
     const hasParts=v?.needsParts||false;
-    const partsBtn=ins.vehicleId?`<button class="btn btn-xs ${hasParts?'btn-pink':'btn-gray'}" style="${hasParts?'animation:pulse 1.5s infinite':''}" onclick="toggleInspParts('${ins.id}',event)">${hasParts?'🔩部品あり':'部品注文'}</button>`:'';
+    const partsBtn=ins.vehicleId?`<button class="btn btn-xs ${hasParts?'btn-danger':'btn-gray'}" style="${hasParts?'animation:pulse 1.5s infinite':''}" onclick="toggleInspParts('${ins.id}',event)">${hasParts?'🔩部品注文':'部品注文'}</button>`:'';
+    // 販売車タブと同様の表記：型式6文字 車名 色
+    const vinPre=v&&v.vin&&v.vin.includes('-')?v.vin.split('-')[0].slice(0,6)+' ':'';
+    const colorStr=v&&v.color?' '+toFullWidth(v.color):'';
+    const displayName=v?(vinPre+v.name+colorStr):ins.carName;
     return`<div class="photo-card${chk?' checked':''}" data-id="${ins.id}">
       <input type="checkbox" class="photo-chk" data-id="${ins.id}" ${chk} onchange="toggleInspCheck('${ins.id}',this.checked)">
       <img src="${ins.photoUrl}" loading="lazy" alt="${ins.carName}" onclick="viewPhotoById('${ins.id}')">
       <div class="photo-info">
-        <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)">${ins.carName}</div>
-        <div style="font-size:10px;color:var(--text3)">${ins.date}${ins.needsParts?'<span style="color:var(--pink)"> 🔩</span>':''}${ins.memo?' · '+ins.memo:''}</div>
+        <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)">${displayName}</div>
+        <div style="font-size:10px;color:var(--text3)">${ins.date}${ins.needsParts?'<span style="color:var(--red)"> 🔩</span>':''}${ins.memo?' · '+ins.memo:''}</div>
         ${partsBtn?`<div style="margin-top:4px">${partsBtn}</div>`:''}
       </div>
     </div>`;
