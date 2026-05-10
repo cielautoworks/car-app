@@ -189,7 +189,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.29</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.30</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -1081,9 +1081,9 @@ window.renderStock=function(){
     // 仕入日表示（西暦のまま）・年式（和暦）
     const yearJp=toJapaneseYear(v.year);
 
-    // 納車待ちで4ボタン未完了なら点滅
+    // 納車待ちで清掃・整備・部品注文なしの3条件が揃うまで点滅（撮影は納車待ちでは除外）
     const isSold=s1==='sold';
-    const soldIncomplete=isSold&&!(v.cleaned&&v.photographed&&v.maintained&&!v.needsParts);
+    const soldIncomplete=isSold&&!(v.cleaned&&v.maintained&&!v.needsParts);
     return`<div class="stock-item${chk?' checked':''}${soldIncomplete?' sold-alert':''}" id="si-${v.id}">
       <div style="display:flex;gap:8px;align-items:flex-start">
         <input type="checkbox" ${chk} onchange="toggleCheck('${v.id}',this.checked)" style="margin-top:6px;flex-shrink:0">
