@@ -180,7 +180,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.17</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.19</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -373,7 +373,7 @@
     <div style="border:2px dashed var(--border2);border-radius:var(--radius-sm);padding:16px;text-align:center;cursor:pointer;color:var(--text3);background:var(--surface2)" onclick="document.getElementById('file-input').click()">
       <div id="up-preview"><div style="font-size:24px">📷</div><p style="font-size:13px">タップして写真を選択</p></div>
     </div>
-    <input type="file" id="file-input" accept="image/*" style="display:none" onchange="previewPhoto(event)">
+    <input type="file" id="file-input" accept="image/*" style="display:none" onchange="previewPhoto(event)" onclick="this.value=null">
     <div id="up-progress" style="display:none;margin-top:8px;font-size:12px;color:var(--green);font-weight:700;text-align:center"></div>
     <div style="display:flex;gap:8px;margin-top:14px">
       <button class="btn" style="flex:1" onclick="closeModal('modal-upload')">キャンセル</button>
@@ -942,7 +942,8 @@ function renderStockStats(){
   const list=Object.values(stock);
   const floor=list.filter(v=>(v.status1||'undelivered')==='floor').length;
   const listing=list.filter(v=>(v.status1||'undelivered')==='listing').length;
-  const uninsp=list.filter(v=>(v.status2||'none')==='none').length;
+  // 未点検：store頭未着・点検不要を除外
+  const uninsp=list.filter(v=>(v.status2||'none')==='none'&&(v.status1||'undelivered')!=='undelivered').length;
   const repair=list.filter(v=>(v.status2||'none')==='ng').length;
   const sold=list.filter(v=>(v.status1||'undelivered')==='sold').length;
   document.getElementById('stock-stats').innerHTML=`
@@ -980,17 +981,18 @@ window.renderStock=function(){
     const s1=v.status1||'undelivered';
     const s2=v.status2||'none';
     const s1i=S1[s1]||S1.undelivered;
-    const s2i=S2[s2]||S2.none;
+    // 店頭未着は未点検バッジを表示しない
+    const s2i=s1==='undelivered'&&s2==='none' ? null : (S2[s2]||S2.none);
     const ic=Object.values(inspections).filter(i=>i.vehicleId===v.id).length;
     const chk=checkedIds.has(v.id)?'checked':'';
 
-
-    // アクションボタン：店頭未着・納車完了以外はすべて表示、完了=薄く、再タップで戻る
+    // アクションボタン：点検不要・店頭未着・納車完了は非表示
+    const isSkip=(s2==='skip');
     const cleanCls=v.cleaned?'done':'';
     const photoCls=v.photographed?'done':'';
     const maintCls=v.maintained?'done':'';
     let btnsHtml='';
-    if(s1!=='undelivered'&&s1!=='delivered'){
+    if(s1!=='undelivered'&&s1!=='delivered'&&!isSkip){
       btnsHtml='<div class="action-btns-row">';
       // 清掃・撮影（販売済以外）
       if(s1!=='sold'){
@@ -1006,10 +1008,12 @@ window.renderStock=function(){
       if(s1!=='sold'){
         btnsHtml+=`<button class="action-btn action-btn-maint ${maintCls}" onclick="quickAction(event,'${v.id}','maintain')">整備<br>完了</button>`;
       }
-      // 部品注文（常に表示、注文あり=点滅、なし=薄い）
-      btnsHtml+=v.needsParts
-        ?`<button class="action-btn action-btn-parts" onclick="quickAction(event,'${v.id}','parts')">部品<br>注文</button>`
-        :`<button class="action-btn action-btn-parts-off" onclick="quickAction(event,'${v.id}','parts')">部品<br>注文</button>`;
+      // 部品注文（注文あり=点滅、なし=薄い）
+      if(!v.needsParts){
+        btnsHtml+=`<button class="action-btn action-btn-parts-off" onclick="quickAction(event,'${v.id}','parts')">部品<br>注文</button>`;
+      }else{
+        btnsHtml+=`<button class="action-btn action-btn-parts" onclick="quickAction(event,'${v.id}','parts')">部品<br>注文</button>`;
+      }
       btnsHtml+='</div>';
     }
 
@@ -1027,7 +1031,7 @@ window.renderStock=function(){
           <!-- 1行目：バッジ -->
           <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px;cursor:pointer" onclick="openStockDetail('${v.id}')">
             <span class="badge ${s1i.cls}">${s1i.label}</span>
-            <span class="badge ${s2i.cls}">${s2i.label}</span>
+            ${s2i?`<span class="badge ${s2i.cls}">${s2i.label}</span>`:''}
             ${v.needsParts?'<span class="badge b-parts" style="font-size:10px">🔩部品待ち</span>':''}
           </div>
           <!-- 2行目：型式＋車名＋色＋補足テキスト＋📋ボタン -->
@@ -1056,7 +1060,7 @@ window.renderStock=function(){
           <!-- アクションボタン横並び＋画像登録ボタン -->
           <div onclick="event.stopPropagation()" style="display:flex;align-items:flex-end;gap:5px;flex-wrap:wrap">
             <div style="flex:1">${btnsHtml}</div>
-            ${s1!=='undelivered'&&s1!=='delivered'?`<button class="action-btn action-btn-insp ${ic?'done':''}" onclick="openUploadForStock('${v.id}')">画像<br>登録</button>`:''}
+            ${s1!=='undelivered'&&s1!=='delivered'&&!isSkip?`<button class="action-btn action-btn-insp ${ic?'done':''}" onclick="openUploadForStock('${v.id}')">画像<br>登録</button>`:''}
           </div>
         </div>
       </div>
