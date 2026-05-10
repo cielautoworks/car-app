@@ -180,7 +180,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.20</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.21</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -673,27 +673,31 @@ window.openAction=function(carId,action){
   const lbl={out:`貸出: ${car.name}`,reserve:`予約: ${car.name}`,return:`返却確認: ${car.name}`,cancel:`予約取消: ${car.name}`};
   document.getElementById('ma-title').textContent=lbl[action];
   let body='';
-  if(action==='out')
-    body=`<p class="lbl">お客様名</p><input type="text" id="act-b" placeholder="例：田中様" style="margin-bottom:12px">
+  if(action==='out'){
+    // 予約済みの場合、予約時のお客様名を入力欄に初期表示
+    const prefill=car.status==='reserved'&&car.borrower?car.borrower:'';
+    body=`<p class="lbl">お客様名</p><input type="text" id="act-b" value="${prefill}" placeholder="例：田中様" style="margin-bottom:12px">
     <div style="display:flex;gap:8px"><button class="btn" style="flex:1" onclick="closeModal('modal-action')">キャンセル</button>
-    <button class="btn btn-primary" style="flex:1" onclick="doAction('out')">貸出確定</button></div>`;
-  else if(action==='reserve')
-    body=`<p class="lbl">予約者名</p><input type="text" id="act-b" placeholder="例：鈴木様" style="margin-bottom:12px">
+    <button class="btn btn-primary" style="flex:1" onclick="doAction('out','${carId}')">貸出確定</button></div>`;
+  } else if(action==='reserve')
+    body=`<p class="lbl">お客様名</p><input type="text" id="act-b" placeholder="例：鈴木様" style="margin-bottom:12px">
     <div style="display:flex;gap:8px"><button class="btn" style="flex:1" onclick="closeModal('modal-action')">キャンセル</button>
-    <button class="btn btn-amber" style="flex:1" onclick="doAction('reserve')">予約確定</button></div>`;
+    <button class="btn btn-amber" style="flex:1" onclick="doAction('reserve','${carId}')">予約確定</button></div>`;
   else if(action==='return')
     body=`<p style="font-size:13px;margin-bottom:12px">${car.borrower||''}さんから返却しますか？</p>
     <div style="display:flex;gap:8px"><button class="btn" style="flex:1" onclick="closeModal('modal-action')">キャンセル</button>
-    <button class="btn btn-success" style="flex:1" onclick="doAction('return')">返却完了</button></div>`;
+    <button class="btn btn-success" style="flex:1" onclick="doAction('return','${carId}')">返却完了</button></div>`;
   else if(action==='cancel')
     body=`<p style="font-size:13px;margin-bottom:12px">${car.borrower||''}さんの予約を取り消しますか？</p>
     <div style="display:flex;gap:8px"><button class="btn" style="flex:1" onclick="closeModal('modal-action')">キャンセル</button>
-    <button class="btn btn-danger" style="flex:1" onclick="doAction('cancel')">取消</button></div>`;
+    <button class="btn btn-danger" style="flex:1" onclick="doAction('cancel','${carId}')">取消</button></div>`;
   document.getElementById('ma-body').innerHTML=body;
   openModal('modal-action');
+  // 貸出モーダル表示時に入力欄にフォーカス
+  if(action==='out'||action==='reserve') setTimeout(()=>document.getElementById('act-b')?.focus(),100);
 };
-window.doAction=async function(action){
-  const car={...cars[selectedCarId]};
+window.doAction=async function(action,carId){
+  const car={...cars[carId||selectedCarId]};
   const b=document.getElementById('act-b');
   if(action==='out'){car.status='out';car.borrower=(b?.value||'').trim()||'不明';car.since=today();car.outTs=nowTs();}
   else if(action==='reserve'){car.status='reserved';car.borrower=(b?.value||'').trim()||'不明';}
