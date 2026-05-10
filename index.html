@@ -153,6 +153,9 @@
   /* 部品注文：注文あり=点滅、注文なし=薄い */
   .action-btn-parts{background:var(--pink-bg);border-color:var(--pink);color:var(--pink);animation:pulse 1.5s infinite}
   .action-btn-parts-off{background:var(--surface3);border-color:var(--border2);color:var(--text3);opacity:0.45}
+  /* 画像登録：未登録=黄色鮮やか、登録済=薄い */
+  .action-btn-insp{background:#2C2200;border-color:#FFD600;color:#FFD600}
+  .action-btn-insp.done{background:var(--surface3);border-color:var(--border2);color:var(--text3);opacity:0.45}
   .individual-select{font-size:11px;padding:3px 5px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-family:inherit;cursor:pointer}
   .dtable{width:100%;font-size:12px;border-collapse:collapse;margin-bottom:10px}
   .dtable td{padding:5px 0;vertical-align:top;border-bottom:1px solid var(--border)}
@@ -177,7 +180,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.14</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.16</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -191,11 +194,11 @@
   <div id="tab-loaner" class="content">
     <!-- 空き台数：左右2分割 -->
     <div class="avail-row">
-      <div class="avail-box avail-box-loaner">
+      <div class="avail-box avail-box-loaner" id="loaner-avail-box" style="cursor:pointer" onclick="toggleLoanerFilter('available')">
         <div class="avail-num" style="color:var(--green)" id="loaner-avail-n">0</div>
         <div class="avail-lbl" style="color:var(--green)">代車 空き</div>
       </div>
-      <div class="avail-box avail-box-rental">
+      <div class="avail-box avail-box-rental" id="rental-avail-box" style="cursor:pointer" onclick="toggleLoanerFilter('available')">
         <div class="avail-num" style="color:var(--cyan)" id="rental-avail-n">0</div>
         <div class="avail-lbl" style="color:var(--cyan)">レンタカー 空き</div>
       </div>
@@ -467,6 +470,7 @@ let uploadDataUrl=null,selectedCarId=null,addCarType='loaner';
 let checkedIds=new Set(),inspCheckedIds=new Set();
 let fullImgInspId=null;
 let ready=false;
+let loanerFilter=null; // 代車フィルター状態
 
 function today(){return new Date().toLocaleDateString('ja-JP',{month:'2-digit',day:'2-digit'});}
 function nowTs(){return Date.now();}
@@ -529,8 +533,8 @@ function startListeners(){
     else setSyncSt('● 再接続中...','connecting');
   });
   onValue(ref(db,'cars'),        snap=>{cars=snap.val()||{};       renderLoaner();});
-  onValue(ref(db,'stock'),       snap=>{stock=snap.val()||{};      renderStockStats();renderStock();updateCsvCount();});
-  onValue(ref(db,'inspections'), snap=>{inspections=snap.val()||{};renderInspections();});
+  onValue(ref(db,'stock'),       snap=>{stock=snap.val()||{};      renderStockStats();renderStock();renderLoaner();updateCsvCount();});
+  onValue(ref(db,'inspections'), snap=>{inspections=snap.val()||{};renderInspections();renderStock();});
   onValue(ref(db,'loanHistories'),snap=>{loanHistories=snap.val()||{};});
 }
 
@@ -546,6 +550,12 @@ window.switchTab=function(tab){
 window.openModal =id=>document.getElementById(id).classList.add('open');
 window.closeModal=id=>document.getElementById(id).classList.remove('open');
 
+// 代車フィルタートグル
+window.toggleLoanerFilter=function(f){
+  loanerFilter=loanerFilter===f?null:f;
+  renderLoaner();
+};
+
 // ===== 代車/レンタカー =====
 function renderLoaner(){
   const all=Object.values(cars);
@@ -559,9 +569,19 @@ function renderLoaner(){
 
   const allRes=all.filter(c=>c.status==='reserved').length;
   const allOut=all.filter(c=>c.status==='out').length;
+
+  // フィルターアクティブ状態を反映（アウトライン強調）
+  const fActive=f=>`outline:${loanerFilter===f?'2px solid #fff':'none'}`;
+  document.getElementById('loaner-avail-box').setAttribute('style',
+    `background:var(--green-bg);border-color:var(--green);cursor:pointer;${fActive('available')}`);
+  document.getElementById('rental-avail-box').setAttribute('style',
+    `background:var(--cyan-bg);border-color:var(--cyan);cursor:pointer;${fActive('available_rental')}`);
+
   document.getElementById('loaner-combined-stats').innerHTML=`
-    <div class="stat3-box stat3-reserved"><div class="stat-n" style="color:var(--amber)">${allRes}</div><div class="stat-l" style="color:var(--amber)">予約中</div></div>
-    <div class="stat3-box stat3-out"><div class="stat-n" style="color:var(--red)">${allOut}</div><div class="stat-l" style="color:var(--red)">貸出中</div></div>
+    <div class="stat3-box stat3-reserved" style="cursor:pointer;${fActive('reserved')}" onclick="toggleLoanerFilter('reserved')">
+      <div class="stat-n" style="color:var(--amber)">${allRes}</div><div class="stat-l" style="color:var(--amber)">予約中</div></div>
+    <div class="stat3-box stat3-out" style="cursor:pointer;${fActive('out')}" onclick="toggleLoanerFilter('out')">
+      <div class="stat-n" style="color:var(--red)">${allOut}</div><div class="stat-l" style="color:var(--red)">貸出中</div></div>
     <div class="stat3-box stat3-total"><div class="stat-n" style="color:var(--purple)">${all.length}</div><div class="stat-l" style="color:var(--purple)">総台数</div></div>`;
 
   // 孤立車両（carTypeなし）をデバッグパネルに反映
@@ -576,10 +596,29 @@ function renderLoaner(){
       : '<p style="font-size:12px;color:var(--text3)">該当なし</p>';
   }
 
-  const combined=[...lList,...rList];
+  // ソート：空き→予約→貸出中、同ステータス内は貸出日数短い順（outTs新しい順）
+  const statusOrder={available:0,reserved:1,out:2};
+  const combined=[...lList,...rList].sort((a,b)=>{
+    const sa=statusOrder[a.status]??9, sb=statusOrder[b.status]??9;
+    if(sa!==sb)return sa-sb;
+    // 貸出中：日数短い順（outTs大きい=最近貸出）
+    if(a.status==='out'&&b.status==='out') return (b.outTs||0)-(a.outTs||0);
+    return (a.addedAt||0)-(b.addedAt||0);
+  });
+
+  // フィルター適用
+  const filtered=loanerFilter
+    ? combined.filter(c=>{
+        if(loanerFilter==='available') return c.status==='available';
+        if(loanerFilter==='reserved')  return c.status==='reserved';
+        if(loanerFilter==='out')       return c.status==='out';
+        return true;
+      })
+    : combined;
+
   const el=document.getElementById('loaner-list');
-  el.innerHTML=combined.length
-    ?combined.map(car=>carCardHTML(car)).join('')
+  el.innerHTML=filtered.length
+    ?filtered.map(car=>carCardHTML(car)).join('')
     :'<p style="text-align:center;color:var(--text3);padding:14px 0;font-size:12px">登録されていません</p>';
 }
 
@@ -991,12 +1030,15 @@ window.renderStock=function(){
             <span class="badge ${s2i.cls}">${s2i.label}</span>
             ${v.needsParts?'<span class="badge b-parts" style="font-size:10px">🔩部品待ち</span>':''}
           </div>
-          <!-- 2行目：型式＋車名＋色＋補足テキスト -->
-          <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;cursor:pointer" onclick="openStockDetail('${v.id}')">
-            ${v.vin&&v.vin.includes('-')?`<span style="font-size:18px;font-weight:700;color:var(--text)">${v.vin.split('-')[0].slice(0,6)}</span>`:''}
-            <span style="font-size:18px;font-weight:700;color:var(--text)">${v.name||'不明'}</span>
-            ${v.color?`<span style="font-size:18px;font-weight:700;color:#fff">${toFullWidth(v.color)}</span>`:''}
-            ${v.displayNote?`<span style="font-size:13px;color:var(--text2);font-weight:500">${v.displayNote}</span>`:''}
+          <!-- 2行目：型式＋車名＋色＋補足テキスト＋📋ボタン -->
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;flex:1;min-width:0;cursor:pointer" onclick="openStockDetail('${v.id}')">
+              ${v.vin&&v.vin.includes('-')?`<span style="font-size:18px;font-weight:700;color:var(--text)">${v.vin.split('-')[0].slice(0,6)}</span>`:''}
+              <span style="font-size:18px;font-weight:700;color:var(--text)">${v.name||'不明'}</span>
+              ${v.color?`<span style="font-size:18px;font-weight:700;color:#fff">${toFullWidth(v.color)}</span>`:''}
+              ${v.displayNote?`<span style="font-size:13px;color:var(--text2);font-weight:500">${v.displayNote}</span>`:''}
+            </div>
+            ${ic?`<button class="btn btn-xs" style="flex-shrink:0;background:var(--blue-bg);border-color:var(--blue);color:var(--blue)" onclick="event.stopPropagation();openStockDetail('${v.id}')">📋 ${ic}件</button>`:''}
           </div>
           <!-- 3行目：仕入日・仕入先・合計金額 -->
           <div style="font-size:11px;color:var(--text2);margin-top:3px;cursor:pointer" onclick="openStockDetail('${v.id}')">
@@ -1006,14 +1048,16 @@ window.renderStock=function(){
           <div style="font-size:11px;color:var(--text3);margin-top:1px;cursor:pointer" onclick="openStockDetail('${v.id}')">
             ${yearJp?yearJp+' / ':''}${v.vin||''}
           </div>
-          ${ic?`<span style="font-size:10px;background:var(--blue-bg);color:var(--blue);padding:1px 6px;border-radius:10px;margin-top:3px;display:inline-block;border:1px solid var(--blue)">📋 ${ic}件</span>`:''}
           <!-- 個別プルダウン -->
           <div style="display:flex;gap:4px;margin-top:6px" onclick="event.stopPropagation()">
             <select class="individual-select" style="flex:1" onchange="indivChange('${v.id}','s1',this.value)">${s1opts}</select>
             <select class="individual-select" style="flex:1" onchange="indivChange('${v.id}','s2',this.value)">${s2opts}</select>
           </div>
-          <!-- アクションボタン横並び -->
-          <div onclick="event.stopPropagation()">${btnsHtml}</div>
+          <!-- アクションボタン横並び＋画像登録ボタン -->
+          <div onclick="event.stopPropagation()" style="display:flex;align-items:flex-end;gap:5px;flex-wrap:wrap">
+            <div style="flex:1">${btnsHtml}</div>
+            <button class="action-btn action-btn-insp ${ic?'done':''}" onclick="openUploadForStock('${v.id}')">画像<br>登録</button>
+          </div>
         </div>
       </div>
     </div>`;
@@ -1323,6 +1367,17 @@ async function applyCsvUpdateDirect(updates){
   alert(`棚卸更新完了\n情報上書き: ${updates.length}台`);
 }
 let selectedUpVehicleId=null;
+
+// 販売車カードから画像登録（その車両を自動選択してアップロードモーダルを開く）
+window.openUploadForStock=function(vid){
+  openUpload();
+  setTimeout(()=>{
+    const v=stock[vid];if(!v)return;
+    setSelectedVehicle(vid);
+    const qw=document.getElementById('quick-select-wrap');
+    if(qw)qw.style.display='none';
+  },50);
+};
 
 window.openUpload=function(){
   selectedUpVehicleId=null;
