@@ -69,7 +69,7 @@
   .b-loaner-badge{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber)}
   .b-rental-badge{background:var(--cyan-bg);color:var(--cyan);border:1px solid var(--cyan)}
   .b-listing{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue)}
-  .b-sold{background:var(--red-bg);color:var(--red);border:1px solid var(--red)}
+  .b-sold{background:var(--pink-bg);color:var(--pink);border:1px solid var(--pink)}
   .b-delivered{background:var(--gray-bg);color:var(--gray);border:1px solid var(--gray)}
   .b-av{background:var(--green-bg);color:var(--green);border:1px solid var(--green)}
   .b-rv{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber)}
@@ -84,6 +84,9 @@
   .b-parts{background:var(--red-bg);color:var(--red);border:2px solid var(--red);animation:pulse 1.5s infinite}
   /* 出品票登録済バッジ */
   .b-ad{background:#2C2200;color:#FFD600;border:1px solid #FFD600}
+  /* 納車待ち未完了点滅 */
+  @keyframes sold-pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,100,180,0.0);border-color:var(--border)}50%{box-shadow:0 0 0 4px rgba(255,100,180,0.5);border-color:var(--pink)}}
+  .sold-alert{animation:sold-pulse 1.5s infinite;border-color:var(--pink)!important}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
   /* 統計 */
   .stats5{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:10px}
@@ -186,7 +189,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.28</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.29</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -252,7 +255,7 @@
           <option value="s1_loaner">代車</option>
           <option value="s1_rental">レンタカー</option>
           <option value="s1_listing">出品</option>
-          <option value="s1_sold">販売済</option>
+          <option value="s1_sold">納車待ち</option>
           <option value="s1_delivered">納車完了</option>
         </optgroup>
         <optgroup label="▼ステータス②">
@@ -277,7 +280,7 @@
           <option value="s1_loaner">代車</option>
           <option value="s1_rental">レンタカー</option>
           <option value="s1_listing">出品</option>
-          <option value="s1_sold">販売済</option>
+          <option value="s1_sold">納車待ち</option>
           <option value="s1_delivered">納車完了</option>
         </optgroup>
         <optgroup label="ステータス②">
@@ -298,7 +301,10 @@
   <div id="tab-inspection" class="content hidden">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <span style="font-size:13px;font-weight:700">点検シート</span>
-      <button class="btn btn-sm btn-primary" onclick="openUpload()">＋ アップロード</button>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="btn btn-sm" id="btn-parts-filter" onclick="toggleInspPartsFilter()" style="background:var(--red-bg);border-color:var(--red);color:var(--red);font-size:11px">🔩 部品注文のみ</button>
+        <button class="btn btn-sm btn-primary" onclick="openUpload()">＋ アップロード</button>
+      </div>
     </div>
     <div class="insp-bulk-bar">
       <input type="checkbox" id="insp-chk-all" onchange="toggleInspAll(this.checked)">
@@ -478,7 +484,7 @@ const S1={
   loaner:     {label:'代車',     cls:'b-loaner-badge'},
   rental:     {label:'レンタカー',cls:'b-rental-badge'},
   listing:    {label:'出品中',   cls:'b-listing'},
-  sold:       {label:'販売済',   cls:'b-sold'},
+  sold:       {label:'納車待ち', cls:'b-sold'},
   delivered:  {label:'納車完了', cls:'b-delivered'},
 };
 const S2={
@@ -494,6 +500,8 @@ let checkedIds=new Set(),inspCheckedIds=new Set();
 let fullImgInspId=null;
 let ready=false;
 let loanerFilter=null; // 代車フィルター状態
+let stockStatFilter=null; // 販売車統計BOXフィルター状態
+let inspPartsFilter=false; // 点検シート部品注文フィルター状態
 
 function today(){return new Date().toLocaleDateString('ja-JP',{month:'2-digit',day:'2-digit'});}
 function nowTs(){return Date.now();}
@@ -972,17 +980,21 @@ function renderStockStats(){
   const list=Object.values(stock);
   const floor=list.filter(v=>(v.status1||'undelivered')==='floor').length;
   const listing=list.filter(v=>(v.status1||'undelivered')==='listing').length;
-  // 未点検：store頭未着・点検不要を除外
   const uninsp=list.filter(v=>(v.status2||'none')==='none'&&(v.status1||'undelivered')!=='undelivered').length;
   const repair=list.filter(v=>(v.status2||'none')==='ng').length;
   const sold=list.filter(v=>(v.status1||'undelivered')==='sold').length;
+  const fA=f=>stockStatFilter===f?'outline:2px solid #fff;':'';
   document.getElementById('stock-stats').innerHTML=`
-    <div class="stat"><div class="stat-n" style="color:var(--green)">${floor}</div><div class="stat-l">在庫</div></div>
-    <div class="stat"><div class="stat-n" style="color:var(--blue)">${listing}</div><div class="stat-l">出品中</div></div>
-    <div class="stat"><div class="stat-n" style="color:var(--red)">${uninsp}</div><div class="stat-l">未点検</div></div>
-    <div class="stat"><div class="stat-n" style="color:var(--orange)">${repair}</div><div class="stat-l">要整備</div></div>
-    <div class="stat"><div class="stat-n" style="color:var(--pink)">${sold}</div><div class="stat-l">納車待ち</div></div>`;
+    <div class="stat" style="cursor:pointer;${fA('floor')}" onclick="toggleStockStatFilter('floor')"><div class="stat-n" style="color:var(--green)">${floor}</div><div class="stat-l">在庫</div></div>
+    <div class="stat" style="cursor:pointer;${fA('listing')}" onclick="toggleStockStatFilter('listing')"><div class="stat-n" style="color:var(--blue)">${listing}</div><div class="stat-l">出品中</div></div>
+    <div class="stat" style="cursor:pointer;${fA('uninsp')}" onclick="toggleStockStatFilter('uninsp')"><div class="stat-n" style="color:var(--red)">${uninsp}</div><div class="stat-l">未点検</div></div>
+    <div class="stat" style="cursor:pointer;${fA('repair')}" onclick="toggleStockStatFilter('repair')"><div class="stat-n" style="color:var(--orange)">${repair}</div><div class="stat-l">要整備</div></div>
+    <div class="stat" style="cursor:pointer;${fA('sold')}" onclick="toggleStockStatFilter('sold')"><div class="stat-n" style="color:var(--pink)">${sold}</div><div class="stat-l">納車待ち</div></div>`;
 }
+window.toggleStockStatFilter=function(f){
+  stockStatFilter=stockStatFilter===f?null:f;
+  renderStockStats();renderStock();
+};
 
 // ===== 販売車一覧 =====
 window.renderStock=function(){
@@ -1003,6 +1015,14 @@ window.renderStock=function(){
   if(f==='parts')list=list.filter(v=>v.needsParts);
   else if(f.startsWith('s1_'))list=list.filter(v=>(v.status1||'undelivered')===f.slice(3));
   else if(f.startsWith('s2_'))list=list.filter(v=>(v.status2||'none')===f.slice(3));
+  // 統計BOXフィルター
+  if(stockStatFilter){
+    if(stockStatFilter==='floor')   list=list.filter(v=>(v.status1||'undelivered')==='floor');
+    if(stockStatFilter==='listing') list=list.filter(v=>(v.status1||'undelivered')==='listing');
+    if(stockStatFilter==='uninsp')  list=list.filter(v=>(v.status2||'none')==='none'&&(v.status1||'undelivered')!=='undelivered');
+    if(stockStatFilter==='repair')  list=list.filter(v=>(v.status2||'none')==='ng');
+    if(stockStatFilter==='sold')    list=list.filter(v=>(v.status1||'undelivered')==='sold');
+  }
 
   const el=document.getElementById('stock-list');
   if(!list.length){
@@ -1061,7 +1081,10 @@ window.renderStock=function(){
     // 仕入日表示（西暦のまま）・年式（和暦）
     const yearJp=toJapaneseYear(v.year);
 
-    return`<div class="stock-item${chk?' checked':''}" id="si-${v.id}">
+    // 納車待ちで4ボタン未完了なら点滅
+    const isSold=s1==='sold';
+    const soldIncomplete=isSold&&!(v.cleaned&&v.photographed&&v.maintained&&!v.needsParts);
+    return`<div class="stock-item${chk?' checked':''}${soldIncomplete?' sold-alert':''}" id="si-${v.id}">
       <div style="display:flex;gap:8px;align-items:flex-start">
         <input type="checkbox" ${chk} onchange="toggleCheck('${v.id}',this.checked)" style="margin-top:6px;flex-shrink:0">
         <div style="flex:1;min-width:0">
@@ -1681,10 +1704,26 @@ window.unlinkSingleInsp=async function(id){
   await dbUpd(`inspections/${id}`,{vehicleId:null});
 };
 
+window.toggleInspPartsFilter=function(){
+  inspPartsFilter=!inspPartsFilter;
+  const btn=document.getElementById('btn-parts-filter');
+  if(btn){
+    btn.style.outline=inspPartsFilter?'2px solid var(--red)':'';
+    btn.style.fontWeight=inspPartsFilter?'700':'';
+  }
+  renderInspections();
+};
 function renderInspections(){
   const grid=document.getElementById('photo-grid');
   const noP=document.getElementById('no-photos');
-  const list=Object.values(inspections).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+  let list=Object.values(inspections).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+  // 部品注文フィルター
+  if(inspPartsFilter){
+    list=list.filter(ins=>{
+      const v=ins.vehicleId?stock[ins.vehicleId]:null;
+      return v?.needsParts||false;
+    });
+  }
   if(!list.length){grid.innerHTML='';noP.classList.remove('hidden');updateInspBulkBar();return;}
   noP.classList.add('hidden');
   grid.innerHTML=list.map(ins=>{
