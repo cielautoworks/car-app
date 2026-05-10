@@ -186,7 +186,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.27</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.28</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -376,8 +376,8 @@
       <label for="up-parts" style="font-size:14px;font-weight:700;color:var(--text);cursor:pointer">🔩 部品注文あり</label>
     </div>
     <p class="lbl">写真</p>
-    <div style="border:2px dashed var(--border2);border-radius:var(--radius-sm);padding:16px;text-align:center;cursor:pointer;color:var(--text3);background:var(--surface2)" onclick="document.getElementById('file-input').click()">
-      <div id="up-preview"><div style="font-size:24px">📷</div><p style="font-size:13px">タップして写真を選択</p></div>
+    <div id="drop-insp" style="border:2px dashed var(--border2);border-radius:var(--radius-sm);padding:16px;text-align:center;cursor:pointer;color:var(--text3);background:var(--surface2)" onclick="document.getElementById('file-input').click()">
+      <div id="up-preview"><div style="font-size:24px">📷</div><p style="font-size:13px">タップして写真を選択</p><p style="font-size:11px;margin-top:2px">PCはここにドロップも可</p></div>
     </div>
     <input type="file" id="file-input" accept="image/*" style="display:none" onchange="previewPhoto(event)" onclick="this.value=null">
     <div id="up-progress" style="display:none;margin-top:8px;font-size:12px;color:var(--green);font-weight:700;text-align:center"></div>
@@ -394,8 +394,8 @@
   <div class="modal-box"><div class="modal-handle"></div>
     <p class="modal-title">出品票を追加</p>
     <p class="lbl">写真</p>
-    <div style="border:2px dashed var(--border2);border-radius:var(--radius-sm);padding:16px;text-align:center;cursor:pointer;color:var(--text3);background:var(--surface2)" onclick="document.getElementById('listing-file-input').click()">
-      <div id="listing-preview"><div style="font-size:24px">📷</div><p style="font-size:13px">タップして写真を選択</p></div>
+    <div id="drop-listing" style="border:2px dashed var(--border2);border-radius:var(--radius-sm);padding:16px;text-align:center;cursor:pointer;color:var(--text3);background:var(--surface2)" onclick="document.getElementById('listing-file-input').click()">
+      <div id="listing-preview"><div style="font-size:24px">📷</div><p style="font-size:13px">タップして写真を選択</p><p style="font-size:11px;margin-top:2px">PCはここにドロップも可</p></div>
     </div>
     <input type="file" id="listing-file-input" accept="image/*" style="display:none" onclick="this.value=null" onchange="previewListingPhoto(event)">
     <div id="listing-progress" style="display:none;margin-top:8px;font-size:12px;color:var(--green);font-weight:700;text-align:center"></div>
@@ -1325,8 +1325,9 @@ window.openListingUpload=function(vid){
   closeModal('modal-stock-detail');
   openModal('modal-listing-upload');
 };
-window.previewListingPhoto=function(e){
-  const file=e.target.files[0];if(!file)return;
+// ===== 画像リサイズ共通処理 =====
+function processImageFile(file,onDone){
+  if(!file||!file.type.startsWith('image/'))return;
   const img=new Image();const reader=new FileReader();
   reader.onload=ev=>{
     img.onload=()=>{
@@ -1336,13 +1337,46 @@ window.previewListingPhoto=function(e){
       if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
       canvas.width=w;canvas.height=h;
       canvas.getContext('2d').drawImage(img,0,0,w,h);
-      listingUploadDataUrl=canvas.toDataURL('image/jpeg',0.75);
-      document.getElementById('listing-preview').innerHTML=`<img src="${listingUploadDataUrl}" style="max-height:160px;border-radius:6px;object-fit:contain">`;
+      onDone(canvas.toDataURL('image/jpeg',0.75));
     };
     img.src=ev.target.result;
   };
   reader.readAsDataURL(file);
+}
+window.previewPhoto=function(e){
+  processImageFile(e.target.files[0],url=>{
+    uploadDataUrl=url;
+    document.getElementById('up-preview').innerHTML=`<img src="${url}" style="max-height:130px;border-radius:6px;object-fit:contain">`;
+  });
 };
+window.previewListingPhoto=function(e){
+  processImageFile(e.target.files[0],url=>{
+    listingUploadDataUrl=url;
+    document.getElementById('listing-preview').innerHTML=`<img src="${url}" style="max-height:160px;border-radius:6px;object-fit:contain">`;
+  });
+};
+// ===== ドラッグ&ドロップ =====
+function setupDropZone(zoneId,onFile){
+  const zone=document.getElementById(zoneId);if(!zone)return;
+  zone.addEventListener('dragover',e=>{e.preventDefault();zone.style.borderColor='var(--accent)';zone.style.background='var(--green-bg)';});
+  zone.addEventListener('dragleave',e=>{zone.style.borderColor='';zone.style.background='';});
+  zone.addEventListener('drop',e=>{
+    e.preventDefault();zone.style.borderColor='';zone.style.background='';
+    const file=e.dataTransfer.files[0];if(file)onFile(file);
+  });
+}
+setupDropZone('drop-insp',file=>{
+  processImageFile(file,url=>{
+    uploadDataUrl=url;
+    document.getElementById('up-preview').innerHTML=`<img src="${url}" style="max-height:130px;border-radius:6px;object-fit:contain">`;
+  });
+});
+setupDropZone('drop-listing',file=>{
+  processImageFile(file,url=>{
+    listingUploadDataUrl=url;
+    document.getElementById('listing-preview').innerHTML=`<img src="${url}" style="max-height:160px;border-radius:6px;object-fit:contain">`;
+  });
+});
 window.saveListing=async function(){
   if(!listingUploadDataUrl){alert('写真を選択してください');return;}
   const btn=document.getElementById('btn-save-listing');
@@ -1573,24 +1607,6 @@ window.clearVehicleSelect=function(){
   // 絞り込みプルダウンを再表示
   const qw=document.getElementById('quick-select-wrap');
   if(qw)qw.style.display='block';
-};
-window.previewPhoto=function(e){
-  const file=e.target.files[0];if(!file)return;
-  const img=new Image();const reader=new FileReader();
-  reader.onload=ev=>{
-    img.onload=()=>{
-      const canvas=document.createElement('canvas');
-      const MAX=1200;let w=img.width,h=img.height;
-      if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
-      if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
-      canvas.width=w;canvas.height=h;
-      canvas.getContext('2d').drawImage(img,0,0,w,h);
-      uploadDataUrl=canvas.toDataURL('image/jpeg',0.75);
-      document.getElementById('up-preview').innerHTML=`<img src="${uploadDataUrl}" style="max-height:130px;border-radius:6px;object-fit:contain">`;
-    };
-    img.src=ev.target.result;
-  };
-  reader.readAsDataURL(file);
 };
 window.saveInsp=async function(){
   const vid=selectedUpVehicleId;
