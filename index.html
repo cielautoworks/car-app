@@ -180,7 +180,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.19</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.20</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -999,9 +999,10 @@ window.renderStock=function(){
         btnsHtml+=`<button class="action-btn action-btn-clean ${cleanCls}" onclick="quickAction(event,'${v.id}','clean')">清掃<br>完了</button>`;
         btnsHtml+=`<button class="action-btn action-btn-photo ${photoCls}" onclick="quickAction(event,'${v.id}','photo')">撮影<br>完了</button>`;
       }
-      // 清掃・整備（販売済）
+      // 清掃・整備・撮影（販売済）：撮影は薄く残す
       if(s1==='sold'){
         btnsHtml+=`<button class="action-btn action-btn-clean ${cleanCls}" onclick="quickAction(event,'${v.id}','clean')">清掃<br>完了</button>`;
+        btnsHtml+=`<button class="action-btn action-btn-photo done" onclick="quickAction(event,'${v.id}','photo')">撮影<br>完了</button>`;
         btnsHtml+=`<button class="action-btn action-btn-maint ${maintCls}" onclick="quickAction(event,'${v.id}','maintain')">整備<br>完了</button>`;
       }
       // 整備完了（販売済以外：常に表示）
