@@ -170,13 +170,16 @@
   /* 部品注文：注文あり=点滅、注文なし=薄い */
   .action-btn-parts{background:var(--pink-bg);border-color:var(--pink);color:var(--pink);animation:pulse 1.5s infinite}
   .action-btn-parts-off{background:var(--surface3);border-color:var(--border2);color:var(--text3);opacity:0.45}
-  /* 納車待ち専用ボタン（非アクティブ=薄い、アクティブ=ネオン点灯） */
-  .action-btn-dclean{background:var(--surface3);border-color:var(--border2);color:var(--text3);opacity:0.45}
-  .action-btn-dclean.on{background:var(--neo-bg);border-color:var(--cyan);color:var(--cyan);opacity:1}
-  .action-btn-dmaint{background:var(--surface3);border-color:var(--border2);color:var(--text3);opacity:0.45}
-  .action-btn-dmaint.on{background:var(--neo-bg);border-color:var(--amber);color:var(--amber);opacity:1}
-  .action-btn-doc{background:var(--surface3);border-color:var(--border2);color:var(--text3);opacity:0.45}
-  .action-btn-doc.on{background:var(--neo-bg);border-color:var(--purple);color:var(--purple);opacity:1}
+  /* 納車待ち専用ボタン（オレンジ系・アクティブ時点滅） */
+  .action-btn-dclean{background:var(--surface3);border-color:var(--border2);color:var(--text3);opacity:0.35}
+  .action-btn-dclean.on{background:var(--neo-bg);border-color:#FF8C00;color:#FF8C00;opacity:1;animation:pulse 1s infinite}
+  .action-btn-dmaint{background:var(--surface3);border-color:var(--border2);color:var(--text3);opacity:0.35}
+  .action-btn-dmaint.on{background:var(--neo-bg);border-color:#FF6000;color:#FF6000;opacity:1;animation:pulse 1s infinite}
+  .action-btn-doc{background:var(--surface3);border-color:var(--border2);color:var(--text3);opacity:0.35}
+  .action-btn-doc.on{background:var(--neo-bg);border-color:#FFB300;color:#FFB300;opacity:1;animation:pulse 1s infinite}
+  /* 代車貸出中バッジ色分け */
+  .b-out-loaner{background:var(--neo-bg);color:#00C040;border:2px solid #00C040}
+  .b-out-rental{background:var(--neo-bg);color:#0090FF;border:2px solid #0090FF}
   /* 画像登録：未登録=黄色鮮やか、登録済=薄い */
   .action-btn-insp{background:#2C2200;border-color:#FFD600;color:#FFD600}
   .action-btn-insp.done{background:var(--surface3);border-color:var(--border2);color:var(--text3);opacity:0.45}
@@ -204,7 +207,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.40</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.43</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -693,7 +696,9 @@ function carCardHTML(car){
     btns=`<button class="btn btn-sm btn-primary" onclick="openAction('${car.id}','out')">貸出</button>
           <button class="btn btn-sm" onclick="openAction('${car.id}','cancel')">取消</button>`;
   }else{
-    badge='<span class="badge b-out">貸出中</span>';
+    badge=isRental
+      ?'<span class="badge b-out-rental">貸出中</span>'
+      :'<span class="badge b-out-loaner">貸出中</span>';
     btns=`<button class="btn btn-sm btn-success" onclick="openAction('${car.id}','return')">返却</button>`;
   }
   const borrowerStr=car.borrower?`<span style="font-size:12px;color:#fff;margin-left:4px">${car.borrower}</span>`:'';
@@ -1116,20 +1121,28 @@ window.renderStock=function(){
     const cleanCls=v.cleaned?'done':'';
     const photoCls=v.photographed?'done':'';
     const maintCls=v.maintained?'done':'';
+    // 納車待ちボタン状態（ボタン生成より前に定義が必要）
+    const dCleanOn=v.deliveryClean||false;
+    const dMaintOn=v.deliveryMaint||false;
+    const docDoneOn=v.docDone||false;
+    // 納車待ち：1つでもON→点滅・納車準備中、全OFF→納車準備完了
+    const isSold=s1==='sold';
+    const anyOn=dCleanOn||dMaintOn||docDoneOn||v.needsParts;
+    const soldIncomplete=isSold&&anyOn;
+    const s1label=isSold?(anyOn?'納車準備中':'納車準備完了'):s1i.label;
+    const s1cls=isSold?(anyOn?'b-sold':'b-floor'):s1i.cls;
     let btnsHtml='';
     if(s1!=='undelivered'&&s1!=='delivered'&&!isSkip){
       btnsHtml='<div class="action-btns-row">';
       if(s1==='sold'){
-        // 納車待ち専用4本ボタン（アクティブ=ON=仕事あり、非アクティブ=完了）
         btnsHtml+=`<button class="action-btn action-btn-dclean ${dCleanOn?'on':''}" onclick="quickAction(event,'${v.id}','dclean')">納車<br>清掃</button>`;
         btnsHtml+=`<button class="action-btn action-btn-dmaint ${dMaintOn?'on':''}" onclick="quickAction(event,'${v.id}','dmaint')">納車<br>整備</button>`;
-        btnsHtml+=`<button class="action-btn action-btn-doc ${docDoneOn?'on':''}" onclick="quickAction(event,'${v.id}','doc')">書類<br>登録</button>`;
+        btnsHtml+=`<button class="action-btn action-btn-doc ${docDoneOn?'on':''}" onclick="quickAction(event,'${v.id}','doc')">登録<br>手続</button>`;
       }else{
         btnsHtml+=`<button class="action-btn action-btn-clean ${cleanCls}" onclick="quickAction(event,'${v.id}','clean')">清掃<br>完了</button>`;
         btnsHtml+=`<button class="action-btn action-btn-photo ${photoCls}" onclick="quickAction(event,'${v.id}','photo')">撮影<br>完了</button>`;
         btnsHtml+=`<button class="action-btn action-btn-maint ${maintCls}" onclick="quickAction(event,'${v.id}','maintain')">整備<br>完了</button>`;
       }
-      // 部品注文（sold含む全ステータス）
       btnsHtml+=v.needsParts
         ?`<button class="action-btn action-btn-parts" onclick="quickAction(event,'${v.id}','parts')">部品<br>注文</button>`
         :`<button class="action-btn action-btn-parts-off" onclick="quickAction(event,'${v.id}','parts')">部品<br>注文</button>`;
@@ -1142,18 +1155,6 @@ window.renderStock=function(){
 
     // 仕入日表示（西暦のまま）・年式（和暦）
     const yearJp=toJapaneseYear(v.year);
-
-    // 納車待ち：4本ボタンの状態
-    const dCleanOn=v.deliveryClean||false;
-    const dMaintOn=v.deliveryMaint||false;
-    const docDoneOn=v.docDone||false;
-    // 点滅：4本のうち1本でもアクティブ（ON）なら点滅
-    const isSold=s1==='sold';
-    const soldIncomplete=isSold&&(dCleanOn||dMaintOn||docDoneOn||v.needsParts);
-    // バッジ：4本全てOFF（非アクティブ）なら「納車準備完了」
-    const soldReady=isSold&&!dCleanOn&&!dMaintOn&&!docDoneOn&&!v.needsParts;
-    const s1label=soldReady?'納車準備完了':s1i.label;
-    const s1cls=soldReady?'b-floor':s1i.cls;
 
     return`<div class="stock-item${chk?' checked':''}${soldIncomplete?' sold-alert':''}" id="si-${v.id}">
       <div style="display:flex;gap:8px;align-items:flex-start">
@@ -1229,6 +1230,8 @@ window.indivChange=async function(id,field,val){
   if(field==='s1'){
     const v=stock[id];if(!v)return;
     const upd={status1:val};
+    // soldに変更した時、納車3ボタンを自動ON
+    if(val==='sold'){upd.deliveryClean=true;upd.deliveryMaint=true;upd.docDone=true;}
     // 代車・レンタカーに変更した場合、まだ登録されていなければ代車タブに追加
     if((val==='loaner'||val==='rental')&&!Object.values(cars).some(c=>c.stockId===id)){
       const cid=uid();
