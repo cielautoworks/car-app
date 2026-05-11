@@ -76,6 +76,8 @@
   .b-av{background:var(--neo-bg);color:var(--green);border:2px solid var(--green)}
   .b-rv{background:var(--neo-bg);color:var(--amber);border:2px solid var(--amber)}
   .b-out{background:var(--neo-bg);color:var(--red);border:2px solid var(--red)}
+  .b-out-loaner{background:var(--neo-bg);color:#00C040;border:2px solid #00C040}
+  .b-out-rental{background:var(--neo-bg);color:#0090FF;border:2px solid #0090FF}
   /* 点検バッジ */
   .b-insp-none{background:var(--neo-bg);color:var(--red);border:2px solid var(--red)}
   .b-insp-ng{background:var(--neo-bg);color:var(--orange);border:2px solid var(--orange)}
@@ -170,6 +172,13 @@
   /* 部品注文：注文あり=点滅、注文なし=薄い */
   .action-btn-parts{background:var(--pink-bg);border-color:var(--pink);color:var(--pink);animation:pulse 1.5s infinite}
   .action-btn-parts-off{background:var(--surface3);border-color:var(--border2);color:var(--text3);opacity:0.45}
+  /* 納車待ち専用ボタン（店頭在庫ボタンと被らないオレンジ系）アクティブ時点滅 */
+  .action-btn-dclean{background:var(--surface3);border-color:var(--border2);color:var(--text3);opacity:0.35}
+  .action-btn-dclean.on{background:var(--neo-bg);border-color:#FF8C00;color:#FF8C00;opacity:1;animation:pulse 1s infinite}
+  .action-btn-dmaint{background:var(--surface3);border-color:var(--border2);color:var(--text3);opacity:0.35}
+  .action-btn-dmaint.on{background:var(--neo-bg);border-color:#FF6000;color:#FF6000;opacity:1;animation:pulse 1s infinite}
+  .action-btn-doc{background:var(--surface3);border-color:var(--border2);color:var(--text3);opacity:0.35}
+  .action-btn-doc.on{background:var(--neo-bg);border-color:#FFB300;color:#FFB300;opacity:1;animation:pulse 1s infinite}
   /* 画像登録：未登録=黄色鮮やか、登録済=薄い */
   .action-btn-insp{background:#2C2200;border-color:#FFD600;color:#FFD600}
   .action-btn-insp.done{background:var(--surface3);border-color:var(--border2);color:var(--text3);opacity:0.45}
@@ -197,7 +206,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.34</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.41</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -576,7 +585,7 @@ function startListeners(){
     else setSyncSt('● 再接続中...','connecting');
   });
   onValue(ref(db,'cars'),        snap=>{cars=snap.val()||{};       renderLoaner();});
-  onValue(ref(db,'stock'),       snap=>{stock=snap.val()||{};      renderStockStats();renderStock();renderLoaner();updateCsvCount();});
+  onValue(ref(db,'stock'),       snap=>{stock=snap.val()||{};      renderStock();renderLoaner();});
   onValue(ref(db,'inspections'), snap=>{inspections=snap.val()||{};renderInspections();renderStock();});
   onValue(ref(db,'loanHistories'),snap=>{loanHistories=snap.val()||{};});
   onValue(ref(db,'listings'),    snap=>{listings=snap.val()||{};renderStock();});
@@ -590,6 +599,9 @@ function updateCsvCount(){const n=Object.keys(stock).length;document.getElementB
 window.switchTab=function(tab){
   ['loaner','stock','inspection'].forEach(t=>document.getElementById('tab-'+t).classList.toggle('hidden',t!==tab));
   document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['loaner','stock','inspection'][i]===tab));
+  if(tab==='stock')renderStock();
+  if(tab==='loaner')renderLoaner();
+  if(tab==='inspection')renderInspections();
 };
 window.openModal =id=>document.getElementById(id).classList.add('open');
 window.closeModal=id=>document.getElementById(id).classList.remove('open');
@@ -683,7 +695,9 @@ function carCardHTML(car){
     btns=`<button class="btn btn-sm btn-primary" onclick="openAction('${car.id}','out')">貸出</button>
           <button class="btn btn-sm" onclick="openAction('${car.id}','cancel')">取消</button>`;
   }else{
-    badge='<span class="badge b-out">貸出中</span>';  // daysBadgeは2行目のみ
+    badge=isRental
+      ?'<span class="badge b-out-rental">貸出中</span>'
+      :'<span class="badge b-out-loaner">貸出中</span>';
     btns=`<button class="btn btn-sm btn-success" onclick="openAction('${car.id}','return')">返却</button>`;
   }
   const borrowerStr=car.borrower?`<span style="font-size:12px;color:#fff;margin-left:4px">${car.borrower}</span>`:'';
@@ -986,93 +1000,106 @@ function fmtDate(s){
   return s;
 }
 
-// ===== 販売車統計（5項目）=====
-function renderStockStats(){
-  const list=Object.values(stock);
-  const undelivered=list.filter(v=>(v.status1||'undelivered')==='undelivered').length;
-  const floor=list.filter(v=>(v.status1||'undelivered')==='floor').length;
-  const listing=list.filter(v=>(v.status1||'undelivered')==='listing').length;
-  const uninsp=list.filter(v=>(v.status2||'none')==='none'&&(v.status1||'undelivered')!=='undelivered').length;
-  const repair=list.filter(v=>(v.status2||'none')==='ng').length;
-  const sold=list.filter(v=>(v.status1||'undelivered')==='sold').length;
-  const fA=f=>stockStatFilter===f?'outline:2px solid #fff;':'';
-  document.getElementById('stock-stats').innerHTML=`
-    <div class="stat stat-undelivered" style="cursor:pointer;${fA('undelivered')}" onclick="toggleStockStatFilter('undelivered')"><div class="stat-n" style="color:var(--purple)">${undelivered}</div><div class="stat-l" style="color:var(--purple)">未着</div></div>
-    <div class="stat stat-floor" style="cursor:pointer;${fA('floor')}" onclick="toggleStockStatFilter('floor')"><div class="stat-n" style="color:var(--green)">${floor}</div><div class="stat-l" style="color:var(--green)">在庫</div></div>
-    <div class="stat stat-listing" style="cursor:pointer;${fA('listing')}" onclick="toggleStockStatFilter('listing')"><div class="stat-n" style="color:var(--blue)">${listing}</div><div class="stat-l" style="color:var(--blue)">出品中</div></div>
-    <div class="stat stat-uninsp" style="cursor:pointer;${fA('uninsp')}" onclick="toggleStockStatFilter('uninsp')"><div class="stat-n" style="color:var(--red)">${uninsp}</div><div class="stat-l" style="color:var(--red)">未点検</div></div>
-    <div class="stat stat-repair" style="cursor:pointer;${fA('repair')}" onclick="toggleStockStatFilter('repair')"><div class="stat-n" style="color:var(--orange)">${repair}</div><div class="stat-l" style="color:var(--orange)">要整備</div></div>
-    <div class="stat stat-sold" style="cursor:pointer;${fA('sold')}" onclick="toggleStockStatFilter('sold')"><div class="stat-n" style="color:var(--pink)">${sold}</div><div class="stat-l" style="color:var(--pink)">納車待</div></div>`;
-}
+// ===== 販売車統計BOX + 一覧（代車タブと同じ1関数構造）=====
 window.toggleStockStatFilter=function(f){
   stockStatFilter=stockStatFilter===f?null:f;
-  renderStockStats();renderStock();
+  renderStock();
 };
 
-// ===== 販売車一覧 =====
 window.renderStock=function(){
-  // 全角英数字・全角スペースを半角に正規化してから検索
   function normalizeQ(s){
     return s.replace(/[Ａ-Ｚａ-ｚ０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0))
             .replace(/　/g,' ').toLowerCase();
   }
+  const el=document.getElementById('stock-list');
+  const csvEl=document.getElementById('csv-count');
+  const filterEl=document.getElementById('filter-count');
+  const statsEl=document.getElementById('stock-stats');
+  if(!el)return;
+
+  const getS1=v=>v.status1||'undelivered';
+  const getS2=v=>v.status2||'none';
+  const allVehicles=Object.values(stock);
+
+  // ── 統計BOX：常に全件から集計して描画（フィルター状態に関係なく全台数を表示）──
+  if(statsEl){
+    const cnt_ud  =allVehicles.filter(v=>getS1(v)==='undelivered').length;
+    const cnt_fl  =allVehicles.filter(v=>getS1(v)==='floor').length;
+    const cnt_ls  =allVehicles.filter(v=>getS1(v)==='listing').length;
+    const cnt_un  =allVehicles.filter(v=>getS2(v)==='none'&&getS1(v)!=='undelivered').length;
+    const cnt_rp  =allVehicles.filter(v=>getS2(v)==='ng').length;
+    const cnt_sl  =allVehicles.filter(v=>getS1(v)==='sold').length;
+    const fA=f=>stockStatFilter===f?'outline:2px solid #fff;':'';
+    statsEl.innerHTML=`
+      <div class="stat stat-undelivered" style="cursor:pointer;${fA('undelivered')}" onclick="toggleStockStatFilter('undelivered')"><div class="stat-n" style="color:var(--purple)">${cnt_ud}</div><div class="stat-l" style="color:var(--purple)">未着</div></div>
+      <div class="stat stat-floor" style="cursor:pointer;${fA('floor')}" onclick="toggleStockStatFilter('floor')"><div class="stat-n" style="color:var(--green)">${cnt_fl}</div><div class="stat-l" style="color:var(--green)">在庫</div></div>
+      <div class="stat stat-listing" style="cursor:pointer;${fA('listing')}" onclick="toggleStockStatFilter('listing')"><div class="stat-n" style="color:var(--blue)">${cnt_ls}</div><div class="stat-l" style="color:var(--blue)">出品中</div></div>
+      <div class="stat stat-uninsp" style="cursor:pointer;${fA('uninsp')}" onclick="toggleStockStatFilter('uninsp')"><div class="stat-n" style="color:var(--red)">${cnt_un}</div><div class="stat-l" style="color:var(--red)">未点検</div></div>
+      <div class="stat stat-repair" style="cursor:pointer;${fA('repair')}" onclick="toggleStockStatFilter('repair')"><div class="stat-n" style="color:var(--orange)">${cnt_rp}</div><div class="stat-l" style="color:var(--orange)">要整備</div></div>
+      <div class="stat stat-sold" style="cursor:pointer;${fA('sold')}" onclick="toggleStockStatFilter('sold')"><div class="stat-n" style="color:var(--pink)">${cnt_sl}</div><div class="stat-l" style="color:var(--pink)">納車待</div></div>`;
+  }
+
+  // Firebase未接続でstockが空の間は「読込中」表示
+  if(!allVehicles.length){
+    el.innerHTML=`<div class="card" style="text-align:center;color:var(--text3);padding:20px 0">● 読込中...</div>`;
+    if(csvEl)csvEl.textContent='';
+    if(filterEl)filterEl.textContent='';
+    return;
+  }
+
+  // 総台数は常に全件
+  if(csvEl)csvEl.textContent=`全${allVehicles.length}台`;
+
   const q=normalizeQ(document.getElementById('stock-search')?.value||'');
   const f=document.getElementById('stock-filter')?.value||'';
-  let list=Object.values(stock).sort((a,b)=>{
+
+  let list=allVehicles.slice().sort((a,b)=>{
     const da=a.date||'',db2=b.date||'';
     if(da===db2)return(b.addedAt||0)-(a.addedAt||0);
     return da>db2?-1:1;
   });
+
   if(q)list=list.filter(v=>[v.name,v.vin,v.color,v.sup,v.year,v.staff,v.regNo]
-    .some(fld=>normalizeQ(fld||'').includes(q)));
-  if(f==='parts')     list=list.filter(v=>v.needsParts);
+    .some(fld=>normalizeQ(String(fld||'')).includes(q)));
+
+  if(f==='parts')         list=list.filter(v=>v.needsParts);
   else if(f==='no_photo') list=list.filter(v=>{
-    const s1=v.status1||'undelivered';
-    const s2=v.status2||'none';
-    if(s1==='undelivered'||s1==='delivered'||s2==='skip') return false;
-    if(s1==='sold') return false;
+    const s1=getS1(v),s2=getS2(v);
+    if(s1==='undelivered'||s1==='delivered'||s1==='sold'||s2==='skip')return false;
     return !v.photographed;
   });
   else if(f==='no_clean') list=list.filter(v=>{
-    const s1=v.status1||'undelivered';
-    const s2=v.status2||'none';
-    if(s1==='undelivered'||s1==='delivered'||s2==='skip') return false;
+    const s1=getS1(v),s2=getS2(v);
+    if(s1==='undelivered'||s1==='delivered'||s2==='skip')return false;
     return !v.cleaned;
   });
   else if(f==='no_maint') list=list.filter(v=>{
-    const s1=v.status1||'undelivered';
-    const s2=v.status2||'none';
-    if(s1==='undelivered'||s1==='delivered'||s2==='skip') return false;
+    const s1=getS1(v),s2=getS2(v);
+    if(s1==='undelivered'||s1==='delivered'||s2==='skip')return false;
     return !v.maintained;
   });
-  else if(f==='no_insp') list=list.filter(v=>{
-    const s1=v.status1||'undelivered';
-    if(s1==='undelivered'||s1==='delivered'||(v.status2||'none')==='skip') return false;
+  else if(f==='no_insp')  list=list.filter(v=>{
+    const s1=getS1(v);
+    if(s1==='undelivered'||s1==='delivered'||getS2(v)==='skip')return false;
     return !Object.values(inspections).some(i=>i.vehicleId===v.id);
   });
-  else if(f.startsWith('s1_'))list=list.filter(v=>(v.status1||'undelivered')===f.slice(3));
-  else if(f.startsWith('s2_'))list=list.filter(v=>(v.status2||'none')===f.slice(3));
-  // 統計BOXフィルター
-  if(stockStatFilter){
-    if(stockStatFilter==='undelivered') list=list.filter(v=>(v.status1||'undelivered')==='undelivered');
-    if(stockStatFilter==='floor')   list=list.filter(v=>(v.status1||'undelivered')==='floor');
-    if(stockStatFilter==='listing') list=list.filter(v=>(v.status1||'undelivered')==='listing');
-    if(stockStatFilter==='uninsp')  list=list.filter(v=>(v.status2||'none')==='none'&&(v.status1||'undelivered')!=='undelivered');
-    if(stockStatFilter==='repair')  list=list.filter(v=>(v.status2||'none')==='ng');
-    if(stockStatFilter==='sold')    list=list.filter(v=>(v.status1||'undelivered')==='sold');
-  }
+  else if(f.startsWith('s1_'))list=list.filter(v=>getS1(v)===f.slice(3));
+  else if(f.startsWith('s2_'))list=list.filter(v=>getS2(v)===f.slice(3));
 
-  // 絞込台数表示
-  const total=Object.keys(stock).length;
-  const filterEl=document.getElementById('filter-count');
-  if(filterEl){
-    const isFiltered=q||f||stockStatFilter;
-    filterEl.textContent=isFiltered?`絞込${list.length}台`:'';
-  }
+  // 統計BOXフィルター（代車タブと全く同じパターン）
+  const sf=stockStatFilter;
+  if(sf==='undelivered')     list=list.filter(v=>getS1(v)==='undelivered');
+  else if(sf==='floor')      list=list.filter(v=>getS1(v)==='floor');
+  else if(sf==='listing')    list=list.filter(v=>getS1(v)==='listing');
+  else if(sf==='uninsp')     list=list.filter(v=>getS2(v)==='none'&&getS1(v)!=='undelivered');
+  else if(sf==='repair')     list=list.filter(v=>getS2(v)==='ng');
+  else if(sf==='sold')       list=list.filter(v=>getS1(v)==='sold');
+  // sf===null → フィルターなし・全件表示
 
-  const el=document.getElementById('stock-list');
+  if(filterEl)filterEl.textContent=(q||f||sf)?`絞込${list.length}台`:'';
+
   if(!list.length){
-    el.innerHTML=`<div class="card" style="text-align:center;color:var(--text3);padding:20px 0">${Object.keys(stock).length?'該当なし':'📂 CSVを読み込んでください'}</div>`;
+    el.innerHTML=`<div class="card" style="text-align:center;color:var(--text3);padding:20px 0">該当なし</div>`;
     return;
   }
   const visIds=new Set(list.map(v=>v.id));
@@ -1096,27 +1123,20 @@ window.renderStock=function(){
     let btnsHtml='';
     if(s1!=='undelivered'&&s1!=='delivered'&&!isSkip){
       btnsHtml='<div class="action-btns-row">';
-      // 清掃・撮影（販売済以外）
-      if(s1!=='sold'){
+      if(s1==='sold'){
+        // 納車待ち専用4本ボタン（アクティブ=ON=仕事あり、非アクティブ=完了）
+        btnsHtml+=`<button class="action-btn action-btn-dclean ${dCleanOn?'on':''}" onclick="quickAction(event,'${v.id}','dclean')">納車<br>清掃</button>`;
+        btnsHtml+=`<button class="action-btn action-btn-dmaint ${dMaintOn?'on':''}" onclick="quickAction(event,'${v.id}','dmaint')">納車<br>整備</button>`;
+        btnsHtml+=`<button class="action-btn action-btn-doc ${docDoneOn?'on':''}" onclick="quickAction(event,'${v.id}','doc')">登録<br>手続</button>`;
+      }else{
         btnsHtml+=`<button class="action-btn action-btn-clean ${cleanCls}" onclick="quickAction(event,'${v.id}','clean')">清掃<br>完了</button>`;
         btnsHtml+=`<button class="action-btn action-btn-photo ${photoCls}" onclick="quickAction(event,'${v.id}','photo')">撮影<br>完了</button>`;
-      }
-      // 清掃・整備・撮影（販売済）：撮影は薄く残す
-      if(s1==='sold'){
-        btnsHtml+=`<button class="action-btn action-btn-clean ${cleanCls}" onclick="quickAction(event,'${v.id}','clean')">清掃<br>完了</button>`;
-        btnsHtml+=`<button class="action-btn action-btn-photo done" onclick="quickAction(event,'${v.id}','photo')">撮影<br>完了</button>`;
         btnsHtml+=`<button class="action-btn action-btn-maint ${maintCls}" onclick="quickAction(event,'${v.id}','maintain')">整備<br>完了</button>`;
       }
-      // 整備完了（販売済以外：常に表示）
-      if(s1!=='sold'){
-        btnsHtml+=`<button class="action-btn action-btn-maint ${maintCls}" onclick="quickAction(event,'${v.id}','maintain')">整備<br>完了</button>`;
-      }
-      // 部品注文（注文あり=点滅、なし=薄い）
-      if(!v.needsParts){
-        btnsHtml+=`<button class="action-btn action-btn-parts-off" onclick="quickAction(event,'${v.id}','parts')">部品<br>注文</button>`;
-      }else{
-        btnsHtml+=`<button class="action-btn action-btn-parts" onclick="quickAction(event,'${v.id}','parts')">部品<br>注文</button>`;
-      }
+      // 部品注文（sold含む全ステータス）
+      btnsHtml+=v.needsParts
+        ?`<button class="action-btn action-btn-parts" onclick="quickAction(event,'${v.id}','parts')">部品<br>注文</button>`
+        :`<button class="action-btn action-btn-parts-off" onclick="quickAction(event,'${v.id}','parts')">部品<br>注文</button>`;
       btnsHtml+='</div>';
     }
 
@@ -1127,19 +1147,29 @@ window.renderStock=function(){
     // 仕入日表示（西暦のまま）・年式（和暦）
     const yearJp=toJapaneseYear(v.year);
 
-    // 納車待ちで清掃・整備・部品注文なしの3条件が揃うまで点滅（撮影は納車待ちでは除外）
+    // 納車待ち：4本ボタンの状態
+    const dCleanOn=v.deliveryClean||false;
+    const dMaintOn=v.deliveryMaint||false;
+    const docDoneOn=v.docDone||false;
+    // 点滅：1つでもアクティブ（ON）なら点滅
     const isSold=s1==='sold';
-    const soldIncomplete=isSold&&!(v.cleaned&&v.maintained&&!v.needsParts);
+    const anyOn=dCleanOn||dMaintOn||docDoneOn||v.needsParts;
+    const soldIncomplete=isSold&&anyOn;
+    // バッジ：全てOFF→「納車準備完了」、1つでもON→「納車準備中」
+    const s1label=isSold?(anyOn?'納車準備中':'納車準備完了'):s1i.label;
+    const s1cls=isSold?(anyOn?'b-sold':'b-floor'):s1i.cls;
+
     return`<div class="stock-item${chk?' checked':''}${soldIncomplete?' sold-alert':''}" id="si-${v.id}">
       <div style="display:flex;gap:8px;align-items:flex-start">
         <input type="checkbox" ${chk} onchange="toggleCheck('${v.id}',this.checked)" style="margin-top:6px;flex-shrink:0">
         <div style="flex:1;min-width:0">
-          <!-- 1行目：バッジ -->
-          <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px;cursor:pointer" onclick="openStockDetail('${v.id}')">
-            <span class="badge ${s1i.cls}">${s1i.label}</span>
+          <!-- 1行目：バッジ＋メモ -->
+          <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-bottom:4px;cursor:pointer" onclick="openStockDetail('${v.id}')">
+            <span class="badge ${s1cls}">${s1label}</span>
             ${s2i?`<span class="badge ${s2i.cls}">${s2i.label}</span>`:''}
             ${v.needsParts?'<span class="badge b-parts" style="font-size:10px">🔩部品注文</span>':''}
             ${hasListing?'<span class="badge b-ad">AA</span>':''}
+            ${v.memo?`<span style="font-size:11px;color:var(--text2);margin-left:2px">${v.memo}</span>`:''}
           </div>
           <!-- 2行目：型式＋車名＋色＋補足テキスト＋📋ボタン -->
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -1183,6 +1213,9 @@ window.quickAction=async function(e,id,type){
   const upd={};
   if(type==='clean')    upd.cleaned=!v.cleaned;
   if(type==='photo')    upd.photographed=!v.photographed;
+  if(type==='dclean')   upd.deliveryClean=!v.deliveryClean;
+  if(type==='dmaint')   upd.deliveryMaint=!v.deliveryMaint;
+  if(type==='doc')      upd.docDone=!v.docDone;
   if(type==='maintain'){
     upd.maintained=!v.maintained;
     if(!v.maintained){
@@ -1200,6 +1233,8 @@ window.indivChange=async function(id,field,val){
   if(field==='s1'){
     const v=stock[id];if(!v)return;
     const upd={status1:val};
+    // soldに変更した時、納車3ボタンを自動アクティブ（ON）に
+    if(val==='sold'){upd.deliveryClean=true;upd.deliveryMaint=true;upd.docDone=true;}
     // 代車・レンタカーに変更した場合、まだ登録されていなければ代車タブに追加
     if((val==='loaner'||val==='rental')&&!Object.values(cars).some(c=>c.stockId===id)){
       const cid=uid();
@@ -1334,17 +1369,11 @@ window.openStockDetail=function(id){
     :'<p style="font-size:11px;color:var(--text3);margin-bottom:10px">出品票がありません</p>'}`;
 
   document.getElementById('sd-body').innerHTML=`
-    <table class="dtable">${rows}${v.equip?`<tr><td>装備品</td><td style="font-size:11px">${v.equip}</td></tr>`:''}</table>
-    ${listingSection}
-    <p class="lbl">ステータス①（場所・進捗）</p><select id="sd-s1">${s1opts}</select>
-    <p class="lbl">ステータス②（点検）</p><select id="sd-s2" style="margin-bottom:4px">${s2opts}</select>
-    ${finishSection}${lbBtns}
-    <p class="lbl">色を修正（デバッグ）</p>
-    <input type="text" id="sd-color" value="${v.color||''}" placeholder="例：シロ、パールホワイト" style="margin-bottom:2px">
-    <p style="font-size:10px;color:var(--text3);margin-bottom:6px">※CSV取込の色が違う場合のみ使用</p>
-    <p class="lbl">色の補足テキスト（一覧に表示）</p>
-    <input type="text" id="sd-display-note" value="${v.displayNote||''}" placeholder="例：ツートン、マット塗装など" style="margin-bottom:4px">
-    <p class="lbl">メモ</p><textarea id="sd-memo" rows="2" style="margin-bottom:10px">${v.memo||''}</textarea>
+    <p class="lbl">メモ</p>
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <textarea id="sd-memo" rows="2" style="flex:1;margin-bottom:0">${v.memo||''}</textarea>
+      <button class="btn btn-primary btn-sm" style="align-self:stretch" onclick="saveSD('${id}')">保存</button>
+    </div>
     ${ins.length?`<p class="lbl">点検シート（${ins.length}件）</p>
     <div class="photo-grid" style="margin-bottom:10px">${ins.map(i=>`<div class="photo-card" style="position:relative">
       <img src="${i.photoUrl}" loading="lazy" onclick="viewPhotoById('${i.id}')" style="cursor:pointer">
@@ -1357,6 +1386,16 @@ window.openStockDetail=function(id){
         </div>
       </div>
     </div>`).join('')}</div>`:''}
+    ${listingSection}
+    <table class="dtable">${rows}${v.equip?`<tr><td>装備品</td><td style="font-size:11px">${v.equip}</td></tr>`:''}</table>
+    <p class="lbl">ステータス①（場所・進捗）</p><select id="sd-s1">${s1opts}</select>
+    <p class="lbl">ステータス②（点検）</p><select id="sd-s2" style="margin-bottom:4px">${s2opts}</select>
+    ${finishSection}${lbBtns}
+    <p class="lbl">色を修正（デバッグ）</p>
+    <input type="text" id="sd-color" value="${v.color||''}" placeholder="例：シロ、パールホワイト" style="margin-bottom:2px">
+    <p style="font-size:10px;color:var(--text3);margin-bottom:6px">※CSV取込の色が違う場合のみ使用</p>
+    <p class="lbl">色の補足テキスト（一覧に表示）</p>
+    <input type="text" id="sd-display-note" value="${v.displayNote||''}" placeholder="例：ツートン、マット塗装など" style="margin-bottom:4px">
     <div style="display:flex;gap:8px">
       <button class="btn" style="flex:1" onclick="closeModal('modal-stock-detail')">閉じる</button>
       <button class="btn btn-primary" style="flex:1" onclick="saveSD('${id}')">保存</button>
@@ -1374,9 +1413,9 @@ window.saveSD=async function(id){
     color:document.getElementById('sd-color').value.trim()||v.color||'',
     displayNote:document.getElementById('sd-display-note').value.trim(),
   };
-  if(newS1==='sold'){
-    upd.cleaned  =document.getElementById('sd-cleaned')?.checked||false;
-    upd.maintained=document.getElementById('sd-maintained')?.checked||false;
+  if(newS1==='sold'&&v.status1!=='sold'){
+    // 新たにsoldになった時だけ3ボタンをアクティブ化
+    upd.deliveryClean=true;upd.deliveryMaint=true;upd.docDone=true;
   }
   await dbUpd(`stock/${id}`,upd);closeModal('modal-stock-detail');
 };
