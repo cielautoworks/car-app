@@ -209,7 +209,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.47</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.48</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -1375,42 +1375,36 @@ window.openStockDetail=function(id){
       <button class="btn btn-primary btn-sm" style="align-self:stretch" onclick="saveSD('${id}')">保存</button>
     </div>
     ${ins.length?`
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <p class="lbl" style="margin:0">点検シート（${ins.length}件）</p>
-      <button class="btn btn-xs btn-gray" onclick="toggleSection('sd-insp-section',this)">▶ 表示</button>
-    </div>
-    <div id="sd-insp-section" style="display:none;margin-bottom:10px">
-      <div class="photo-grid">${ins.map(i=>`<div class="photo-card" style="position:relative">
-        <img src="${i.photoUrl}" loading="lazy" onclick="viewPhotoById('${i.id}')" style="cursor:pointer">
-        <div class="photo-info">
-          <div style="font-size:11px;font-weight:700">${i.date}${i.needRepair?'<span style="color:var(--red)"> ⚠️</span>':''}</div>
-          <div style="font-size:10px;color:var(--text3)">${i.memo||''}</div>
-          <div style="display:flex;gap:4px;margin-top:4px">
-            <button class="btn btn-xs btn-gray" onclick="unlinkSingleInsp('${i.id}')">紐付解除</button>
+    <div style="margin-bottom:10px">
+      <p class="lbl" style="margin-bottom:6px">点検シート（${ins.length}件）</p>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${ins.map(i=>`<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:6px;padding:8px 10px">
+          <div>
+            <span style="font-size:12px;font-weight:700;color:var(--text)">${i.date}</span>
+            ${i.memo?`<span style="font-size:11px;color:var(--text3);margin-left:6px">${i.memo}</span>`:''}
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-xs btn-gray" onclick="viewPhotoById('${i.id}')">🖼 表示</button>
+            <button class="btn btn-xs btn-gray" onclick="unlinkSingleInsp('${i.id}')">解除</button>
             <button class="btn btn-xs btn-danger" onclick="deleteSingleInsp('${i.id}')">削除</button>
           </div>
-        </div>
-      </div>`).join('')}
+        </div>`).join('')}
       </div>
     </div>`:''}
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <p class="lbl" style="margin:0">出品票（${vListings.length}件）</p>
-      <div style="display:flex;gap:4px">
-        ${vListings.length?`<button class="btn btn-xs btn-gray" onclick="toggleSection('sd-listing-section',this)">▶ 表示</button>`:''}
+    <div style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <p class="lbl" style="margin:0">出品票（${vListings.length}件）</p>
         <button class="btn btn-xs" style="background:#2C2200;border-color:#FFD600;color:#FFD600" onclick="openListingUpload('${id}')">＋ 追加</button>
       </div>
-    </div>
-    <div id="sd-listing-section" style="display:none;margin-bottom:10px">
-      ${vListings.length?`<div class="photo-grid">${vListings.map(l=>`<div class="photo-card">
-        <img src="${l.photoUrl}" loading="lazy" onclick="viewListingPhoto('${l.id}')" style="cursor:pointer">
-        <div class="photo-info">
-          <div style="font-size:10px;color:var(--text3);display:flex;justify-content:space-between;align-items:center">
-            <span>${l.date||''}</span>
+      ${vListings.length?`<div style="display:flex;flex-direction:column;gap:6px">
+        ${vListings.map(l=>`<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:6px;padding:8px 10px">
+          <span style="font-size:12px;font-weight:700;color:var(--text)">${l.date||''}</span>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-xs btn-gray" onclick="viewListingPhoto('${l.id}')">🖼 表示</button>
             <button class="btn btn-xs btn-danger" onclick="deleteListing('${l.id}')">削除</button>
           </div>
-        </div>
-      </div>`).join('')}</div>`
-      :'<p style="font-size:11px;color:var(--text3)">出品票がありません</p>'}
+        </div>`).join('')}
+      </div>`:'<p style="font-size:11px;color:var(--text3)">出品票がありません</p>'}
     </div>
     <table class="dtable">${rows}${v.equip?`<tr><td>装備品</td><td style="font-size:11px">${v.equip}</td></tr>`:''}</table>
     <p class="lbl">ステータス①（場所・進捗）</p><select id="sd-s1">${s1opts}</select>
