@@ -209,7 +209,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.48</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.49</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -582,22 +582,50 @@ function setSyncSt(t,s='ok'){
 function showLoading(msg){document.getElementById('loading-msg').textContent=msg||'処理中...';document.getElementById('loading').style.display='flex';}
 function hideLoading(){document.getElementById('loading').style.display='none';}
 
-function startListeners(){
-  onValue(ref(db,'.info/connected'),snap=>{
-    if(snap.val()){setSyncSt('● 同期中','ok');if(!ready){ready=true;hideLoading();}}
-    else setSyncSt('● 再接続中...','connecting');
-  });
-  onValue(ref(db,'cars'),        snap=>{cars=snap.val()||{};       renderLoaner();});
-  onValue(ref(db,'stock'),       snap=>{stock=snap.val()||{};      renderStock();renderLoaner();});
-  onValue(ref(db,'inspections'), snap=>{inspections=snap.val()||{};renderInspections();renderStock();});
-  onValue(ref(db,'loanHistories'),snap=>{loanHistories=snap.val()||{};});
-  onValue(ref(db,'listings'),    snap=>{listings=snap.val()||{};renderStock();});
-  // 画像データは別パスに分離・リスナー不要（表示時に個別取得）
+// ===== データ取得（10秒ポーリング）=====
+let pollingTimer=null;
+
+async function fetchAll(){
+  try{
+    const [carsSnap,stockSnap,inspSnap,histSnap,listSnap]=await Promise.all([
+      get(ref(db,'cars')),
+      get(ref(db,'stock')),
+      get(ref(db,'inspections')),
+      get(ref(db,'loanHistories')),
+      get(ref(db,'listings')),
+    ]);
+    cars        =carsSnap.val()||{};
+    stock       =stockSnap.val()||{};
+    inspections =inspSnap.val()||{};
+    loanHistories=histSnap.val()||{};
+    listings    =listSnap.val()||{};
+    setSyncSt('● 同期中','ok');
+    renderLoaner();
+    renderStock();
+    renderInspections();
+  }catch(err){
+    setSyncSt('● エラー','error');
+  }
 }
 
-async function dbSet(p,d){setSyncSt('● 保存中...','saving');await set(ref(db,p),d);}
-async function dbUpd(p,d){setSyncSt('● 保存中...','saving');await update(ref(db,p),d);}
-async function dbDel(p){setSyncSt('● 保存中...','saving');await remove(ref(db,p));}
+function startListeners(){
+  onValue(ref(db,'.info/connected'),snap=>{
+    if(snap.val()){
+      if(!ready){ready=true;hideLoading();}
+      setSyncSt('● 同期中','ok');
+      // 接続確立後に即座に全データ取得
+      fetchAll();
+    }else{
+      setSyncSt('● 再接続中...','connecting');
+    }
+  });
+  // 10秒ごとにポーリング
+  pollingTimer=setInterval(fetchAll,10000);
+}
+
+async function dbSet(p,d){setSyncSt('● 保存中...','saving');await set(ref(db,p),d);await fetchAll();}
+async function dbUpd(p,d){setSyncSt('● 保存中...','saving');await update(ref(db,p),d);await fetchAll();}
+async function dbDel(p){setSyncSt('● 保存中...','saving');await remove(ref(db,p));await fetchAll();}
 function updateCsvCount(){const n=Object.keys(stock).length;document.getElementById('csv-count').textContent=n?`全${n}台`:'';document.getElementById('filter-count').textContent='';};
 
 window.switchTab=function(tab){
@@ -1519,9 +1547,9 @@ window.saveListing=async function(){
   btn.disabled=true;prog.style.display='block';prog.textContent='📤 保存中...';
   try{
     const id=uid();
-    // メタデータと画像データを別パスに分離
-    await dbSet(`listings/${id}`,{id,vehicleId:listingTargetVehicleId,date:today(),addedAt:nowTs()});
-    await dbSet(`listingPhotos/${id}`,{photoUrl:listingUploadDataUrl});
+    await set(ref(db,`listings/${id}`),{id,vehicleId:listingTargetVehicleId,date:today(),addedAt:nowTs()});
+    await set(ref(db,`listingPhotos/${id}`),{photoUrl:listingUploadDataUrl});
+    await fetchAll();
     prog.textContent='✅ 保存しました';
     listingUploadDataUrl=null;
     setTimeout(()=>{closeModal('modal-listing-upload');if(listingTargetVehicleId)openStockDetail(listingTargetVehicleId);},600);
@@ -1769,13 +1797,15 @@ window.saveInsp=async function(){
   try{
     const id=uid();
     // メタデータ（photoUrlなし）と画像データを別パスに分離
-    await dbSet(`inspections/${id}`,{id,vehicleId:vid||null,carName:name,memo,needsParts,date:today(),addedAt:nowTs()});
-    await dbSet(`inspectionPhotos/${id}`,{photoUrl:uploadDataUrl});
+    // 画像パスはfetchAll不要なのでraw setを使用
+    await set(ref(db,`inspections/${id}`),{id,vehicleId:vid||null,carName:name,memo,needsParts,date:today(),addedAt:nowTs()});
+    await set(ref(db,`inspectionPhotos/${id}`),{photoUrl:uploadDataUrl});
     if(vid&&v){
       const upd={status2:needsParts?'ng':'ok'};
       if(needsParts)upd.needsParts=true;
-      await dbUpd(`stock/${vid}`,upd);
+      await update(ref(db,`stock/${vid}`),upd);
     }
+    await fetchAll();
     prog.textContent='✅ 保存しました';uploadDataUrl=null;selectedUpVehicleId=null;
     setTimeout(()=>closeModal('modal-upload'),700);
   }catch(err){prog.textContent='❌ エラー: '+err.message;}
