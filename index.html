@@ -209,7 +209,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.49</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.50</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -533,10 +533,9 @@ function fmt(n){return n?Number(n).toLocaleString():'';}
 function uid(){return 'i'+nowTs()+Math.random().toString(36).slice(2,6);}
 function daysSince(ts){return ts?Math.floor((Date.now()-ts)/86400000)+1:null;}
 
-// 半角→全角変換（色名などに使用）：半角英数・半角カナを全角に変換
+// 半角→全角変換：半角カナ（濁点合成含む）・半角英数を全角に変換
 function toFullWidth(s){
   if(!s)return s;
-  // 半角カナ→全角カナ変換テーブル
   const kanaMap={
     'ｦ':'ヲ','ｧ':'ァ','ｨ':'ィ','ｩ':'ゥ','ｪ':'ェ','ｫ':'ォ','ｬ':'ャ','ｭ':'ュ','ｮ':'ョ','ｯ':'ッ','ｰ':'ー',
     'ｱ':'ア','ｲ':'イ','ｳ':'ウ','ｴ':'エ','ｵ':'オ','ｶ':'カ','ｷ':'キ','ｸ':'ク','ｹ':'ケ','ｺ':'コ',
@@ -548,15 +547,21 @@ function toFullWidth(s){
   const dk={'カ':'ガ','キ':'ギ','ク':'グ','ケ':'ゲ','コ':'ゴ','サ':'ザ','シ':'ジ','ス':'ズ','セ':'ゼ','ソ':'ゾ',
     'タ':'ダ','チ':'ヂ','ツ':'ヅ','テ':'デ','ト':'ド','ハ':'バ','ヒ':'ビ','フ':'ブ','ヘ':'ベ','ホ':'ボ','ウ':'ヴ'};
   const hdk={'ハ':'パ','ヒ':'ピ','フ':'プ','ヘ':'ペ','ホ':'ポ'};
-  // まず半角カナ→全角カナ（濁点・半濁点合成）
-  const arr=s.split('').map(c=>kanaMap[c]||c);
+  // 文字列を配列に展開してから濁点・半濁点を前の文字と合成
+  const chars=[...s].map(c=>kanaMap[c]||c);
   let result='';
-  for(let i=0;i<arr.length;i++){
-    if(arr[i]==='゛'&&result&&dk[result[result.length-1]]){result=result.slice(0,-1)+dk[result[result.length-1]];}
-    else if(arr[i]==='゜'&&result&&hdk[result[result.length-1]]){result=result.slice(0,-1)+hdk[result[result.length-1]];}
-    else result+=arr[i];
+  for(let i=0;i<chars.length;i++){
+    const c=chars[i];
+    if(c==='゛'&&result.length>0){
+      const prev=result[result.length-1];
+      if(dk[prev]){result=result.slice(0,-1)+dk[prev];continue;}
+    }
+    if(c==='゜'&&result.length>0){
+      const prev=result[result.length-1];
+      if(hdk[prev]){result=result.slice(0,-1)+hdk[prev];continue;}
+    }
+    result+=c;
   }
-  // 半角英数→全角英数
   return result.replace(/[A-Za-z0-9]/g,c=>String.fromCharCode(c.charCodeAt(0)+0xFEE0));
 }
 
@@ -637,6 +642,19 @@ window.switchTab=function(tab){
 };
 window.openModal =id=>document.getElementById(id).classList.add('open');
 window.closeModal=id=>document.getElementById(id).classList.remove('open');
+// modal-wrap（背景）タップで閉じる
+document.addEventListener('click',e=>{
+  if(e.target.classList.contains('modal-wrap')&&e.target.classList.contains('open')){
+    e.target.classList.remove('open');
+  }
+});
+// modal-handle（バー）タップで閉じる
+document.addEventListener('click',e=>{
+  if(e.target.classList.contains('modal-handle')){
+    const wrap=e.target.closest('.modal-wrap');
+    if(wrap)wrap.classList.remove('open');
+  }
+});
 
 // 代車フィルタートグル
 window.toggleLoanerFilter=function(f){
@@ -1040,8 +1058,17 @@ window.toggleStockStatFilter=function(f){
 
 window.renderStock=function(){
   function normalizeQ(s){
-    return s.replace(/[Ａ-Ｚａ-ｚ０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0))
-            .replace(/　/g,' ').toLowerCase();
+    if(!s)return '';
+    return s
+      // 全角英数→半角
+      .replace(/[Ａ-Ｚａ-ｚ０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0))
+      // 全角スペース→半角
+      .replace(/　/g,' ')
+      // カタカナ→ひらがな（検索時にどちらでもヒット）
+      .replace(/[\u30A1-\u30F6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60))
+      // 半角カナ→全角カナ→ひらがなの順で変換
+      .replace(/[ｦ-ﾟ]+/g,s=>toFullWidth(s).replace(/[\u30A1-\u30F6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60)))
+      .toLowerCase();
   }
   const el=document.getElementById('stock-list');
   const csvEl=document.getElementById('csv-count');
@@ -1434,15 +1461,17 @@ window.openStockDetail=function(id){
         </div>`).join('')}
       </div>`:'<p style="font-size:11px;color:var(--text3)">出品票がありません</p>'}
     </div>
-    <table class="dtable">${rows}${v.equip?`<tr><td>装備品</td><td style="font-size:11px">${v.equip}</td></tr>`:''}</table>
-    <p class="lbl">ステータス①（場所・進捗）</p><select id="sd-s1">${s1opts}</select>
-    <p class="lbl">ステータス②（点検）</p><select id="sd-s2" style="margin-bottom:4px">${s2opts}</select>
-    ${finishSection}${lbBtns}
-    <p class="lbl">色を修正（デバッグ）</p>
-    <input type="text" id="sd-color" value="${v.color||''}" placeholder="例：シロ、パールホワイト" style="margin-bottom:2px">
-    <p style="font-size:10px;color:var(--text3);margin-bottom:6px">※CSV取込の色が違う場合のみ使用</p>
-    <p class="lbl">色の補足テキスト（一覧に表示）</p>
-    <input type="text" id="sd-display-note" value="${v.displayNote||''}" placeholder="例：ツートン、マット塗装など" style="margin-bottom:4px">
+    <div style="margin-bottom:10px">
+      <button class="btn btn-sm btn-gray" style="width:100%" onclick="toggleSection('sd-detail-section',this)">▶ 車両情報</button>
+      <div id="sd-detail-section" style="display:none;margin-top:8px">
+        <table class="dtable">${rows}${v.equip?`<tr><td>装備品</td><td style="font-size:11px">${v.equip}</td></tr>`:''}</table>
+        <p class="lbl">色を修正（デバッグ）</p>
+        <input type="text" id="sd-color" value="${v.color||''}" placeholder="例：シロ、パールホワイト" style="margin-bottom:2px">
+        <p style="font-size:10px;color:var(--text3);margin-bottom:6px">※CSV取込の色が違う場合のみ使用</p>
+        <p class="lbl">色の補足テキスト（一覧に表示）</p>
+        <input type="text" id="sd-display-note" value="${v.displayNote||''}" placeholder="例：ツートン、マット塗装など" style="margin-bottom:4px">
+      </div>
+    </div>
     <div style="display:flex;gap:8px">
       <button class="btn" style="flex:1" onclick="closeModal('modal-stock-detail')">閉じる</button>
       <button class="btn btn-primary" style="flex:1" onclick="saveSD('${id}')">保存</button>
@@ -1747,8 +1776,13 @@ window.searchVehicles=function(q){
   const res=document.getElementById('vehicle-search-results');
   if(!q){res.style.display='none';return;}
   function normalizeQ(s){
-    return s.replace(/[Ａ-Ｚａ-ｚ０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0))
-            .replace(/　/g,' ').toLowerCase();
+    if(!s)return '';
+    return s
+      .replace(/[Ａ-Ｚａ-ｚ０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0))
+      .replace(/　/g,' ')
+      .replace(/[\u30A1-\u30F6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60))
+      .replace(/[ｦ-ﾟ]+/g,s=>toFullWidth(s).replace(/[\u30A1-\u30F6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60)))
+      .toLowerCase();
   }
   const nq=normalizeQ(q);
   const matches=Object.values(stock)
