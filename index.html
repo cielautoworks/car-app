@@ -209,7 +209,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.50</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.51</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -1288,8 +1288,11 @@ window.indivChange=async function(id,field,val){
   if(field==='s1'){
     const v=stock[id];if(!v)return;
     const upd={status1:val};
-    // soldに変更した時、納車3ボタンを自動ON
-    if(val==='sold'){upd.deliveryClean=true;upd.deliveryMaint=true;upd.docDone=true;}
+    if(val==='sold'){
+      // 納車待ちに変更：納車3ボタンON、店頭作業ボタンは全てリセット
+      upd.deliveryClean=true;upd.deliveryMaint=true;upd.docDone=true;
+      upd.cleaned=false;upd.photographed=false;upd.maintained=false;
+    }
     // 代車・レンタカーに変更した場合、まだ登録されていなければ代車タブに追加
     if((val==='loaner'||val==='rental')&&!Object.values(cars).some(c=>c.stockId===id)){
       const cid=uid();
