@@ -209,7 +209,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.54</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.55</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -547,16 +547,18 @@ function toFullWidth(s){
   const dk={'カ':'ガ','キ':'ギ','ク':'グ','ケ':'ゲ','コ':'ゴ','サ':'ザ','シ':'ジ','ス':'ズ','セ':'ゼ','ソ':'ゾ',
     'タ':'ダ','チ':'ヂ','ツ':'ヅ','テ':'デ','ト':'ド','ハ':'バ','ヒ':'ビ','フ':'ブ','ヘ':'ベ','ホ':'ボ','ウ':'ヴ'};
   const hdk={'ハ':'パ','ヒ':'ピ','フ':'プ','ヘ':'ペ','ホ':'ポ'};
-  // 文字列を配列に展開してから濁点・半濁点を前の文字と合成
+  // U+FF9E(ﾞ)・U+FF9F(ﾟ)も濁点・半濁点として処理
+  const DAKUTEN  =['\uFF9E','\u309B','\u3099','゛'];
+  const HANDAKUTEN=['\uFF9F','\u309C','\u309A','゜'];
   const chars=[...s].map(c=>kanaMap[c]||c);
   let result='';
   for(let i=0;i<chars.length;i++){
     const c=chars[i];
-    if(c==='゛'&&result.length>0){
+    if(DAKUTEN.includes(c)&&result.length>0){
       const prev=result[result.length-1];
       if(dk[prev]){result=result.slice(0,-1)+dk[prev];continue;}
     }
-    if(c==='゜'&&result.length>0){
+    if(HANDAKUTEN.includes(c)&&result.length>0){
       const prev=result[result.length-1];
       if(hdk[prev]){result=result.slice(0,-1)+hdk[prev];continue;}
     }
