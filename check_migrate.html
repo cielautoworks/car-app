@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>画像移行確認ツール</title>
+<style>
+body{font-family:sans-serif;background:#0F1117;color:#E8EAF0;padding:20px;max-width:640px;margin:0 auto}
+h2{color:#00E676}
+.btn{padding:10px 20px;border-radius:8px;border:2px solid;cursor:pointer;font-size:14px;font-weight:700;background:#080808;margin-right:8px;margin-bottom:8px}
+.btn-green{border-color:#00E676;color:#00E676}
+.btn-blue{border-color:#00ADEF;color:#00ADEF}
+.btn:disabled{opacity:0.4;cursor:not-allowed}
+#log{background:#1C1F2A;border-radius:8px;padding:12px;margin-top:16px;font-size:12px;line-height:1.9;max-height:600px;overflow-y:auto;border:1px solid #383C4E}
+.ok{color:#00E676}.err{color:#FF1744}.info{color:#00ADEF}.warn{color:#FFB300}
+</style>
+</head>
+<body>
+<h2>🔍 画像移行確認・実行ツール</h2>
+<p style="font-size:13px;color:#A0A8C0">inspections・listingsの画像データ移行状況を確認し、未移行データを移行します。</p>
+<div style="margin-top:16px">
+  <button class="btn btn-blue" id="btn-check" onclick="checkMigration()">🔍 移行状況確認</button>
+  <button class="btn btn-green" id="btn-migrate" onclick="runMigration()" disabled>▶ 未移行データを移行</button>
+</div>
+<div id="log"><span class="info">認証中...</span></div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAFJKdWkTa9WvX9W3ZA95P0BoDDugQUkuM",
+  authDomain: "ciel-autoworks.firebaseapp.com",
+  databaseURL: "https://ciel-autoworks-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "ciel-autoworks",
+  storageBucket: "ciel-autoworks.firebasestorage.app",
+  messagingSenderId: "266528519369",
+  appId: "1:266528519369:web:d32686387aa9b0362cc918"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
+
+function log(msg, cls=''){
+  const el=document.getElementById('log');
+  el.innerHTML+=`<div class="${cls}">${msg}</div>`;
+  el.scrollTop=el.scrollHeight;
+}
+
+let authReady=false;
+let pendingMigration={insp:[],list:[]};
+
+onAuthStateChanged(auth,user=>{
+  if(user&&!authReady){
+    authReady=true;
+    document.getElementById('log').innerHTML='';
+    log('✅ 認証完了。「移行状況確認」を押してください。','ok');
+    document.getElementById('btn-check').disabled=false;
+  }
+});
+signInAnonymously(auth).catch(err=>log('❌ 認証エラー: '+err.message,'err'));
+
+window.checkMigration=async function(){
+  if(!authReady)return;
+  document.getElementById('btn-check').disabled=true;
+  document.getElementById('log').innerHTML='';
+  log('=== 移行状況確認中 ===','info');
+  pendingMigration={insp:[],list:[]};
+
+  try{
+    const [inspSnap,inspPhotoSnap,listSnap,listPhotoSnap]=await Promise.all([
+      get(ref(db,'inspections')),
+      get(ref(db,'inspectionPhotos')),
+      get(ref(db,'listings')),
+      get(ref(db,'listingPhotos')),
+    ]);
+    const inspData=inspSnap.val()||{};
+    const inspPhotoData=inspPhotoSnap.val()||{};
+    const listData=listSnap.val()||{};
+    const listPhotoData=listPhotoSnap.val()||{};
+
+    // inspections確認
+    let inspOk=0,inspNg=0,inspSize=0;
+    for(const [id,ins] of Object.entries(inspData)){
+      if(ins.photoUrl){
+        const kb=Math.round(ins.photoUrl.length/1024);
+        inspSize+=kb;
+        log(`  [未移行] inspections/${id} - ${ins.carName||'不明'} (${kb}KB)`,'warn');
+        pendingMigration.insp.push({id,data:ins});
+        inspNg++;
+      }else{
+        inspOk++;
+      }
+    }
+
+    // listings確認
+    let listOk=0,listNg=0,listSize=0;
+    for(const [id,lst] of Object.entries(listData)){
+      if(lst.photoUrl){
+        const kb=Math.round(lst.photoUrl.length/1024);
+        listSize+=kb;
+        log(`  [未移行] listings/${id} (${kb}KB)`,'warn');
+        pendingMigration.list.push({id,data:lst});
+        listNg++;
+      }else{
+        listOk++;
+      }
+    }
+
+    log('','');
+    log(`=== 確認完了 ===`,'ok');
+    log(`点検シート: 移行済${inspOk}件 / 未移行${inspNg}件（約${inspSize}KB = 毎回のダウンロードに含まれるデータ量）`,'ok');
+    log(`出品票:     移行済${listOk}件 / 未移行${listNg}件（約${listSize}KB）`,'ok');
+
+    if(inspNg+listNg>0){
+      log(`⚠️ 未移行データが${inspNg+listNg}件あります。「未移行データを移行」ボタンで移行してください。`,'warn');
+      document.getElementById('btn-migrate').disabled=false;
+    }else{
+      log('✅ 全データ移行済みです！ダウンロード量は最小化されています。','ok');
+    }
+  }catch(err){
+    log('エラー: '+err.message,'err');
+  }
+  document.getElementById('btn-check').disabled=false;
+};
+
+window.runMigration=async function(){
+  if(!authReady)return;
+  document.getElementById('btn-migrate').disabled=true;
+  document.getElementById('btn-check').disabled=true;
+  log('','');
+  log('=== 移行実行開始 ===','info');
+
+  try{
+    let moved=0;
+    for(const {id,data} of pendingMigration.insp){
+      await set(ref(db,`inspectionPhotos/${id}`),{photoUrl:data.photoUrl});
+      const upd={...data};delete upd.photoUrl;
+      await set(ref(db,`inspections/${id}`),upd);
+      log(`  ✅ inspections/${id} 移行完了`,'ok');
+      moved++;
+    }
+    for(const {id,data} of pendingMigration.list){
+      await set(ref(db,`listingPhotos/${id}`),{photoUrl:data.photoUrl});
+      const upd={...data};delete upd.photoUrl;
+      await set(ref(db,`listings/${id}`),upd);
+      log(`  ✅ listings/${id} 移行完了`,'ok');
+      moved++;
+    }
+    log('','');
+    log(`=== 移行完了 ${moved}件 ===`,'ok');
+    log('アプリを再読み込みしてください。ダウンロード量が大幅に減ります。','info');
+    pendingMigration={insp:[],list:[]};
+  }catch(err){
+    log('エラー: '+err.message,'err');
+  }
+  document.getElementById('btn-check').disabled=false;
+};
+</script>
+</body>
+</html>
