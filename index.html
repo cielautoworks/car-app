@@ -209,7 +209,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.57</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.58</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -2092,17 +2092,20 @@ window.forceDeleteCar=async function(id){
   await dbDel(`cars/${id}`);
 };
 
-// 匿名認証してからアプリ起動（ユーザー操作不要・自動サインイン）
+// 匿名認証してからアプリ起動
 let authStarted=false;
-onAuthStateChanged(auth, user=>{
+onAuthStateChanged(auth,async user=>{
   if(user&&!authStarted){
     authStarted=true;
     startListeners();
+  }else if(!user&&!authStarted){
+    try{
+      await signInAnonymously(auth);
+    }catch(err){
+      setSyncSt('● 認証エラー','error');
+      console.error('Auth error:',err);
+    }
   }
-});
-signInAnonymously(auth).catch(err=>{
-  setSyncSt('● 認証エラー','error');
-  console.error('Auth error:',err);
 });
 </script>
 </body>
