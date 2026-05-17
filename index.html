@@ -209,7 +209,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.58</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.59</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -1031,20 +1031,7 @@ function parseLine(line){
   }
   res.push(cur);return res;
 }
-function kana2full(s){
-  if(!s)return s;
-  const m={'ｦ':'ヲ','ｧ':'ァ','ｨ':'ィ','ｩ':'ゥ','ｪ':'ェ','ｫ':'ォ','ｬ':'ャ','ｭ':'ュ','ｮ':'ョ','ｯ':'ッ','ｰ':'ー','ｱ':'ア','ｲ':'イ','ｳ':'ウ','ｴ':'エ','ｵ':'オ','ｶ':'カ','ｷ':'キ','ｸ':'ク','ｹ':'ケ','ｺ':'コ','ｻ':'サ','ｼ':'シ','ｽ':'ス','ｾ':'セ','ｿ':'ソ','ﾀ':'タ','ﾁ':'チ','ﾂ':'ツ','ﾃ':'テ','ﾄ':'ト','ﾅ':'ナ','ﾆ':'ニ','ﾇ':'ヌ','ﾈ':'ネ','ﾉ':'ノ','ﾊ':'ハ','ﾋ':'ヒ','ﾌ':'フ','ﾍ':'ヘ','ﾎ':'ホ','ﾏ':'マ','ﾐ':'ミ','ﾑ':'ム','ﾒ':'メ','ﾓ':'モ','ﾔ':'ヤ','ﾕ':'ユ','ﾖ':'ヨ','ﾗ':'ラ','ﾘ':'リ','ﾙ':'ル','ﾚ':'レ','ﾛ':'ロ','ﾜ':'ワ','ﾝ':'ン'};
-  const dk={'カ':'ガ','キ':'ギ','ク':'グ','ケ':'ゲ','コ':'ゴ','サ':'ザ','シ':'ジ','ス':'ズ','セ':'ゼ','ソ':'ゾ','タ':'ダ','チ':'ヂ','ツ':'ヅ','テ':'デ','ト':'ド','ハ':'バ','ヒ':'ビ','フ':'ブ','ヘ':'ベ','ホ':'ボ','ウ':'ヴ'};
-  const hdk={'ハ':'パ','ヒ':'ピ','フ':'プ','ヘ':'ペ','ホ':'ポ'};
-  const arr=s.split('').map(c=>m[c]||c);
-  let result='';
-  for(let i=0;i<arr.length;i++){
-    if(arr[i]==='゛'&&result&&dk[result[result.length-1]]){result=result.slice(0,-1)+dk[result[result.length-1]];}
-    else if(arr[i]==='゜'&&result&&hdk[result[result.length-1]]){result=result.slice(0,-1)+hdk[result[result.length-1]];}
-    else{result+=arr[i];}
-  }
-  return result;
-}
+function kana2full(s){return toFullWidth(s);}// toFullWidthに統一（U+FF9E/FF9F対応済み）
 function fmtDate(s){
   if(!s)return '';
   let m=s.match(/令和\s*(\d+)\s*[\/．年]\s*(\d+)\s*[\/．月]\s*(\d+)/);
