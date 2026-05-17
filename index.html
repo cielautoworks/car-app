@@ -209,7 +209,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.59</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.60</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -623,14 +623,19 @@ function startListeners(){
     if(snap.val()){
       if(!ready){ready=true;hideLoading();}
       setSyncSt('● 同期中','ok');
-      // 接続確立後に即座に全データ取得
       fetchAll();
     }else{
       setSyncSt('● 再接続中...','connecting');
     }
   });
-  // 10秒ごとにポーリング
-  pollingTimer=setInterval(fetchAll,10000);
+  // 30秒ごとにポーリング（画面表示中のみ）
+  pollingTimer=setInterval(()=>{
+    if(!document.hidden)fetchAll();
+  },30000);
+  // タブが再表示された時に即時取得
+  document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden)fetchAll();
+  });
 }
 
 async function dbSet(p,d){setSyncSt('● 保存中...','saving');await set(ref(db,p),d);await fetchAll();}
