@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>画像再圧縮ツール</title>
+<style>
+body{font-family:sans-serif;background:#0F1117;color:#E8EAF0;padding:20px;max-width:640px;margin:0 auto}
+h2{color:#00E676}
+.btn{padding:10px 20px;border-radius:8px;border:2px solid;cursor:pointer;font-size:14px;font-weight:700;background:#080808;margin-right:8px;margin-bottom:8px}
+.btn-green{border-color:#00E676;color:#00E676}
+.btn-blue{border-color:#00ADEF;color:#00ADEF}
+.btn:disabled{opacity:0.4;cursor:not-allowed}
+#log{background:#1C1F2A;border-radius:8px;padding:12px;margin-top:16px;font-size:12px;line-height:1.9;max-height:600px;overflow-y:auto;border:1px solid #383C4E}
+.ok{color:#00E676}.err{color:#FF1744}.info{color:#00ADEF}.warn{color:#FFB300}
+progress{width:100%;height:8px;margin-top:8px;border-radius:4px}
+</style>
+</head>
+<body>
+<h2>🖼 画像再圧縮ツール</h2>
+<p style="font-size:13px;color:#A0A8C0">
+  inspectionPhotos・listingPhotos の画像を<br>
+  <strong>1200px / JPEG 75%</strong> に再圧縮して保存し直します。<br>
+  ※処理に数分かかる場合があります。完了まで閉じないでください。
+</p>
+<div style="margin-top:16px">
+  <button class="btn btn-blue" id="btn-check" onclick="checkImages()">🔍 件数確認</button>
+  <button class="btn btn-green" id="btn-run" onclick="runResize()" disabled>▶ 再圧縮実行</button>
+</div>
+<progress id="prog" value="0" max="100" style="display:none"></progress>
+<div id="log"><span class="info">認証中...</span></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAFJKdWkTa9WvX9W3ZA95P0BoDDugQUkuM",
+  authDomain: "ciel-autoworks.firebaseapp.com",
+  databaseURL: "https://ciel-autoworks-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "ciel-autoworks",
+  storageBucket: "ciel-autoworks.firebasestorage.app",
+  messagingSenderId: "266528519369",
+  appId: "1:266528519369:web:d32686387aa9b0362cc918"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
+
+function log(msg,cls=''){
+  const el=document.getElementById('log');
+  el.innerHTML+=`<div class="${cls}">${msg}</div>`;
+  el.scrollTop=el.scrollHeight;
+}
+
+let authReady=false;
+let allItems=[];
+
+onAuthStateChanged(auth,user=>{
+  if(user&&!authReady){
+    authReady=true;
+    document.getElementById('log').innerHTML='';
+    log('✅ 認証完了。「件数確認」を押してください。','ok');
+  }
+});
+signInAnonymously(auth).catch(err=>log('❌ 認証エラー: '+err.message,'err'));
+
+// 画像を1200px/75%に再圧縮
+function resizeImage(dataUrl){
+  return new Promise(resolve=>{
+    const img=new Image();
+    img.onload=()=>{
+      const MAX=1200;
+      let w=img.width,h=img.height;
+      if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+      if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
+      // すでに小さい画像はそのまま返す
+      if(img.width<=MAX&&img.height<=MAX){resolve(dataUrl);return;}
+      const canvas=document.createElement('canvas');
+      canvas.width=w;canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      resolve(canvas.toDataURL('image/jpeg',0.75));
+    };
+    img.src=dataUrl;
+  });
+}
+
+window.checkImages=async function(){
+  if(!authReady)return;
+  document.getElementById('btn-check').disabled=true;
+  document.getElementById('log').innerHTML='';
+  log('=== 件数確認中 ===','info');
+  allItems=[];
+
+  try{
+    const [inspSnap,listSnap]=await Promise.all([
+      get(ref(db,'inspectionPhotos')),
+      get(ref(db,'listingPhotos')),
+    ]);
+    const inspData=inspSnap.val()||{};
+    const listData=listSnap.val()||{};
+
+    let totalKB=0;
+    for(const [id,v] of Object.entries(inspData)){
+      if(v.photoUrl){
+        const kb=Math.round(v.photoUrl.length/1024);
+        totalKB+=kb;
+        allItems.push({path:`inspectionPhotos/${id}`,photoUrl:v.photoUrl,kb});
+      }
+    }
+    for(const [id,v] of Object.entries(listData)){
+      if(v.photoUrl){
+        const kb=Math.round(v.photoUrl.length/1024);
+        totalKB+=kb;
+        allItems.push({path:`listingPhotos/${id}`,photoUrl:v.photoUrl,kb});
+      }
+    }
+
+    log(`点検シート: ${Object.keys(inspData).length}件`,'ok');
+    log(`出品票: ${Object.keys(listData).length}件`,'ok');
+    log(`合計: ${allItems.length}件 / 現在合計 約${Math.round(totalKB/1024*10)/10}MB`,'ok');
+    log('「再圧縮実行」を押すと1200px/75%に変換して保存します。','info');
+    document.getElementById('btn-run').disabled=false;
+  }catch(err){
+    log('エラー: '+err.message,'err');
+  }
+  document.getElementById('btn-check').disabled=false;
+};
+
+window.runResize=async function(){
+  if(!authReady||!allItems.length)return;
+  document.getElementById('btn-run').disabled=true;
+  document.getElementById('btn-check').disabled=true;
+  const prog=document.getElementById('prog');
+  prog.style.display='block';
+  prog.max=allItems.length;prog.value=0;
+
+  log('','');
+  log('=== 再圧縮開始 ===','info');
+  let done=0,savedKB=0;
+
+  for(const item of allItems){
+    try{
+      const before=item.kb;
+      const resized=await resizeImage(item.photoUrl);
+      const after=Math.round(resized.length/1024);
+      const diff=before-after;
+      if(diff>5){
+        // サイズが減った場合のみ保存
+        await set(ref(db,item.path),{photoUrl:resized});
+        savedKB+=diff;
+        log(`  ✅ ${item.path} ${before}KB → ${after}KB (▼${diff}KB)`, 'ok');
+      }else{
+        log(`  ⏭ ${item.path} ${before}KB (変化なし・スキップ)`,'');
+      }
+    }catch(err){
+      log(`  ❌ ${item.path} エラー: ${err.message}`,'err');
+    }
+    done++;
+    prog.value=done;
+  }
+
+  log('','');
+  log(`=== 完了 ${done}件処理 / 合計 約${Math.round(savedKB/1024*10)/10}MB 削減 ===`,'ok');
+  document.getElementById('btn-check').disabled=false;
+};
+</script>
+</body>
+</html>
