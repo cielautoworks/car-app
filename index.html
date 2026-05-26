@@ -209,7 +209,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.63</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.64</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -329,6 +329,9 @@
         <button class="btn btn-sm" id="btn-parts-filter" onclick="toggleInspPartsFilter()" style="background:var(--red-bg);border-color:var(--red);color:var(--red);font-size:11px">🔩 部品注文のみ</button>
         <button class="btn btn-sm btn-primary" onclick="openUpload()">＋ アップロード</button>
       </div>
+    </div>
+    <div style="margin-bottom:8px">
+      <input type="text" id="insp-search" placeholder="車名・メモで検索..." oninput="renderInspections()" style="width:100%;box-sizing:border-box">
     </div>
     <div class="insp-bulk-bar">
       <input type="checkbox" id="insp-chk-all" onchange="toggleInspAll(this.checked)">
@@ -782,7 +785,7 @@ function carCardHTML(car){
     <div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:4px;cursor:pointer"
          onclick="openEditCar('${car.id}')">
       ${(()=>{const sv=car.stockId&&stock[car.stockId];const vin=sv?.vin||car.vin||'';return vin&&vin.includes('-')?`<span style="font-size:16px;font-weight:700;color:var(--text)">${vin.split('-')[0].slice(0,6)}</span>`:''})()}
-      <span style="font-size:16px;font-weight:700;color:var(--text)">${car.name}</span>${colorStr}${daysBadge2}
+      <span style="font-size:16px;font-weight:700;color:var(--text)">${toFullWidth(car.name)}</span>${colorStr}${daysBadge2}
     </div>
   </div>`;
 }
@@ -1909,12 +1912,23 @@ window.toggleInspPartsFilter=function(){
 function renderInspections(){
   const grid=document.getElementById('photo-grid');
   const noP=document.getElementById('no-photos');
+  const q=(document.getElementById('insp-search')?.value||'').toLowerCase();
   let list=Object.values(inspections).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
   // 部品注文フィルター
   if(inspPartsFilter){
     list=list.filter(ins=>{
       const v=ins.vehicleId?stock[ins.vehicleId]:null;
       return v?.needsParts||false;
+    });
+  }
+  // テキスト検索
+  if(q){
+    list=list.filter(ins=>{
+      const v=ins.vehicleId?stock[ins.vehicleId]:null;
+      const name=(v?v.name:ins.carName)||'';
+      const memo=ins.memo||'';
+      const inspMemo=ins.inspMemo||'';
+      return name.toLowerCase().includes(q)||memo.toLowerCase().includes(q)||inspMemo.toLowerCase().includes(q);
     });
   }
   if(!list.length){grid.innerHTML='';noP.classList.remove('hidden');updateInspBulkBar();return;}
