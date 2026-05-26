@@ -209,7 +209,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.64</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.65</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -300,6 +300,7 @@
           <option value="no_clean">清掃未完了</option>
           <option value="no_maint">整備未完了</option>
           <option value="no_insp">画像未登録</option>
+          <option value="car_inspection_ok">車検準備OK</option>
         </optgroup>
         <optgroup label="▼ステータス①">
           <option value="s1_undelivered">未着</option>
@@ -323,15 +324,13 @@
 
   <!-- 点検シートタブ -->
   <div id="tab-inspection" class="content hidden">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
       <span style="font-size:13px;font-weight:700">点検シート</span>
-      <div style="display:flex;gap:6px;align-items:center">
-        <button class="btn btn-sm" id="btn-parts-filter" onclick="toggleInspPartsFilter()" style="background:var(--red-bg);border-color:var(--red);color:var(--red);font-size:11px">🔩 部品注文のみ</button>
-        <button class="btn btn-sm btn-primary" onclick="openUpload()">＋ アップロード</button>
-      </div>
+      <button class="btn btn-sm btn-primary" onclick="openUpload()">＋ アップロード</button>
     </div>
-    <div style="margin-bottom:8px">
-      <input type="text" id="insp-search" placeholder="車名・メモで検索..." oninput="renderInspections()" style="width:100%;box-sizing:border-box">
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <input type="text" id="insp-search" placeholder="車名・メモで検索..." oninput="renderInspections()" style="flex:1;min-width:0">
+      <button class="btn btn-sm" id="btn-parts-filter" onclick="toggleInspPartsFilter()" style="border-color:var(--red);color:var(--red);font-size:11px;flex-shrink:0">🔩 部品</button>
     </div>
     <div class="insp-bulk-bar">
       <input type="checkbox" id="insp-chk-all" onchange="toggleInspAll(this.checked)">
@@ -1149,6 +1148,10 @@ window.renderStock=function(){
     const s1=getS1(v);
     if(s1==='undelivered'||s1==='delivered'||getS2(v)==='skip')return false;
     return !Object.values(inspections).some(i=>i.vehicleId===v.id);
+  });
+  else if(f==='car_inspection_ok') list=list.filter(v=>{
+    // 店頭在庫 かつ 整備完了（maintained===true）
+    return getS1(v)==='floor'&&v.maintained===true;
   });
   else if(f.startsWith('s1_'))list=list.filter(v=>getS1(v)===f.slice(3));
   else if(f.startsWith('s2_'))list=list.filter(v=>getS2(v)===f.slice(3));
