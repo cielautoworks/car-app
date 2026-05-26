@@ -209,7 +209,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.62</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.63</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -483,6 +483,7 @@
     <p id="full-img-meta" style="font-size:11px;opacity:0.65;margin-top:2px"></p>
   </div>
   <div class="full-btns" id="full-btns"></div>
+  <div id="full-img-memo-area"></div>
 </div>
 
 <script type="module">
@@ -1444,6 +1445,7 @@ window.openStockDetail=function(id){
           <div>
             <span style="font-size:12px;font-weight:700;color:var(--text)">${i.date}</span>
             ${i.memo?`<span style="font-size:11px;color:var(--text3);margin-left:6px">${i.memo}</span>`:''}
+            ${i.inspMemo?`<span style="font-size:11px;color:var(--amber);margin-left:4px">📝${i.inspMemo}</span>`:''}
           </div>
           <div style="display:flex;gap:6px">
             <button class="btn btn-xs btn-gray" onclick="viewPhotoById('${i.id}')">🖼 表示</button>
@@ -1926,14 +1928,17 @@ function renderInspections(){
     const vinPre=v&&v.vin&&v.vin.includes('-')?v.vin.split('-')[0].slice(0,6)+' ':'';
     const colorStr=v&&v.color?' '+toFullWidth(v.color):'';
     const displayName=v?(vinPre+v.name+colorStr):ins.carName;
-    return`<div class="photo-card${chk?' checked':''}" data-id="${ins.id}">
-      <input type="checkbox" class="photo-chk" data-id="${ins.id}" ${chk} onchange="toggleInspCheck('${ins.id}',this.checked)">
-      <div class="photo-info" style="padding:8px">
-        <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);cursor:pointer" onclick="viewPhotoById('${ins.id}')">${displayName}</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:2px">${ins.date}${ins.needsParts?'<span style="color:var(--red)"> 🔩</span>':''}${ins.memo?' · '+ins.memo:''}</div>
-        <div style="display:flex;gap:4px;margin-top:6px;align-items:center">
-          <button class="btn btn-xs btn-gray" onclick="viewPhotoById('${ins.id}')">🖼 画像表示</button>
-          ${partsBtn}
+    return`<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px">
+      <input type="checkbox" class="photo-chk" data-id="${ins.id}" ${chk} onchange="toggleInspCheck('${ins.id}',this.checked)" style="width:18px;height:18px;margin-top:6px;flex-shrink:0;accent-color:var(--red);cursor:pointer">
+      <div class="photo-card${chk?' checked':''}" data-id="${ins.id}" style="flex:1">
+        <div class="photo-info" style="padding:8px">
+          <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);cursor:pointer" onclick="viewPhotoById('${ins.id}')">${displayName}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">${ins.date}${ins.needsParts?'<span style="color:var(--red)"> 🔩</span>':''}${ins.memo?'<span style="color:var(--text2)"> · '+ins.memo+'</span>':''}</div>
+          ${ins.inspMemo?`<div style="font-size:11px;color:var(--amber);margin-top:2px">📝 ${ins.inspMemo}</div>`:''}
+          <div style="display:flex;gap:4px;margin-top:6px;align-items:center">
+            <button class="btn btn-xs btn-gray" onclick="viewPhotoById('${ins.id}')">🖼 画像表示</button>
+            ${partsBtn}
+          </div>
         </div>
       </div>
     </div>`;
@@ -1986,7 +1991,24 @@ window.viewPhotoById=async function(id){
       🔩<span style="font-size:10px">部品${partsDone?'あり':'注文'}</span>
     </button>`:''}`;
 
+  // メモ入力欄
+  const memoArea=document.getElementById('full-img-memo-area');
+  if(memoArea){
+    memoArea.innerHTML=`
+      <div style="display:flex;gap:6px;padding:8px 12px;background:var(--surface2);border-top:1px solid var(--border)">
+        <textarea id="full-img-memo-input" rows="2" placeholder="追加整備メモなど..." style="flex:1;font-size:12px;resize:none">${ins.inspMemo||''}</textarea>
+        <button class="btn btn-primary btn-sm" onclick="saveInspMemo('${id}')">保存</button>
+      </div>`;
+  }
+
   document.getElementById('full-img').classList.add('open');
+};
+
+window.saveInspMemo=async function(id){
+  const val=document.getElementById('full-img-memo-input')?.value.trim()||'';
+  await dbUpd(`inspections/${id}`,{inspMemo:val});
+  const btn=document.querySelector(`[onclick="saveInspMemo('${id}')"]`);
+  if(btn){const orig=btn.textContent;btn.textContent='✅';setTimeout(()=>btn.textContent=orig,1200);}
 };
 
 window.fullImgDelete=async function(){
