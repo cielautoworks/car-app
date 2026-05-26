@@ -137,12 +137,12 @@
   .full-btns{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center}
   .full-btns .btn{padding:10px 16px;font-size:13px;flex-direction:column;gap:2px;min-width:72px;line-height:1.2}
   /* 点検シート */
-  .photo-grid{display:grid;grid-template-columns:1fr;gap:6px}
+  .photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
   .photo-card{background:var(--surface2);border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border);position:relative}
   .photo-card.checked{border-color:var(--red);border-width:2px}
   .photo-card img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;cursor:pointer}
   .photo-info{padding:5px 7px}
-  .photo-chk{position:absolute;top:6px;left:6px;width:20px;height:20px;accent-color:var(--red);cursor:pointer}
+  .photo-chk{position:absolute;top:6px;right:6px;width:18px;height:18px;accent-color:var(--red);cursor:pointer;z-index:1}
   /* 検索バー */
   .search-row{display:flex;gap:6px;margin-bottom:8px}
   .search-row input{flex:1}
@@ -209,7 +209,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.66</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.68</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -1945,17 +1945,15 @@ function renderInspections(){
     const vinPre=v&&v.vin&&v.vin.includes('-')?v.vin.split('-')[0].slice(0,6)+' ':'';
     const colorStr=v&&v.color?' '+toFullWidth(v.color):'';
     const displayName=v?(vinPre+v.name+colorStr):ins.carName;
-    return`<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px">
-      <input type="checkbox" class="photo-chk" data-id="${ins.id}" ${chk} onchange="toggleInspCheck('${ins.id}',this.checked)" style="width:18px;height:18px;margin-top:10px;flex-shrink:0;accent-color:var(--red);cursor:pointer">
-      <div class="photo-card${chk?' checked':''}" data-id="${ins.id}" style="flex:1;min-width:0">
-        <div class="photo-info" style="padding:8px">
-          <div style="font-size:12px;font-weight:700;color:var(--text);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" onclick="viewPhotoById('${ins.id}')">${displayName}</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:2px">${ins.date}${ins.needsParts?'<span style="color:var(--red)"> 🔩</span>':''}${ins.memo?'<span style="color:var(--text2)"> · '+ins.memo+'</span>':''}</div>
-          ${ins.inspMemo?`<div style="font-size:11px;color:var(--amber);margin-top:2px">📝 ${ins.inspMemo}</div>`:''}
-          <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">
-            <button class="btn btn-xs btn-gray" onclick="viewPhotoById('${ins.id}')">🖼 画像表示</button>
-            ${partsBtn}
-          </div>
+    return`<div class="photo-card${chk?' checked':''}" data-id="${ins.id}">
+      <input type="checkbox" class="photo-chk" data-id="${ins.id}" ${chk} onchange="toggleInspCheck('${ins.id}',this.checked)">
+      <div class="photo-info" style="padding:8px">
+        <div style="font-size:11px;font-weight:700;color:var(--text);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:22px" onclick="viewPhotoById('${ins.id}')">${displayName}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">${ins.date}${ins.needsParts?'<span style="color:var(--red)"> 🔩</span>':''}${ins.memo?'<span style="color:var(--text2)"> · '+ins.memo+'</span>':''}</div>
+        ${ins.inspMemo?`<div style="font-size:10px;color:var(--amber);margin-top:2px">📝 ${ins.inspMemo}</div>`:''}
+        <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">
+          <button class="btn btn-xs btn-gray" onclick="viewPhotoById('${ins.id}')">🖼 画像</button>
+          ${partsBtn}
         </div>
       </div>
     </div>`;
