@@ -135,13 +135,16 @@
   .modal-title{font-size:15px;font-weight:700;margin-bottom:12px;color:var(--text)}
   .modal-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 14px}
   /* 画像拡大 */
-  .full-wrap{position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:300;display:none;flex-direction:column;align-items:center;justify-content:flex-start;padding:16px;overflow:hidden}
+  .full-wrap{position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:300;display:none;flex-direction:column;align-items:stretch;justify-content:flex-start;overflow:hidden}
   .full-wrap.open{display:flex}
+  .full-img-header{display:flex;align-items:center;gap:8px;padding:10px 12px;flex-shrink:0}
+  .full-img-header .close-x{background:rgba(255,255,255,0.15);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:16px;flex-shrink:0}
+  .full-img-header .header-info{flex:1;min-width:0}
+  .full-img-header .header-info p{margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .full-img-container{flex:1;width:100%;overflow:hidden;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab;min-height:0}
   .full-img-container:active{cursor:grabbing}
   .full-wrap img{max-width:100%;max-height:100%;border-radius:10px;object-fit:contain;transform-origin:center center;transition:transform 0.1s ease;user-select:none;-webkit-user-drag:none}
-  .close-x{position:absolute;top:16px;right:16px;color:#fff;font-size:16px;cursor:pointer;background:rgba(255,255,255,0.15);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center}
-  .full-btns{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center}
+  .full-btns{display:flex;gap:8px;padding:10px 12px;flex-wrap:wrap;justify-content:center;flex-shrink:0}
   .full-btns .btn{padding:10px 16px;font-size:13px;flex-direction:column;gap:2px;min-width:72px;line-height:1.2}
   /* 点検シート */
   .photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
@@ -216,7 +219,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.70</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.71</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -491,15 +494,17 @@
 
 <!-- 画像拡大表示 -->
 <div class="full-wrap" id="full-img">
-  <div class="close-x" onclick="closeFullImg()">✕</div>
+  <div class="full-img-header">
+    <div class="close-x" onclick="closeFullImg()">✕</div>
+    <div class="header-info">
+      <p id="full-img-name" style="font-size:13px;font-weight:700;color:#fff"></p>
+      <p id="full-img-meta" style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:1px"></p>
+    </div>
+  </div>
   <div class="full-img-container" id="full-img-container">
     <img id="full-img-el" src="">
   </div>
-  <div style="color:#fff;margin-top:8px;text-align:center;flex-shrink:0">
-    <p id="full-img-name" style="font-size:13px;font-weight:700"></p>
-    <p id="full-img-meta" style="font-size:11px;opacity:0.65;margin-top:2px"></p>
-  </div>
-  <div class="full-btns" id="full-btns" style="flex-shrink:0"></div>
+  <div class="full-btns" id="full-btns"></div>
   <div id="full-img-memo-area" style="flex-shrink:0;width:100%"></div>
 </div>
 
