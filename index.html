@@ -88,7 +88,12 @@
   .b-parts{background:var(--neo-bg);color:var(--red);border:1px solid var(--red);animation:pulse 1.5s infinite}
   /* 出品票登録済バッジ */
   .b-ad{background:var(--neo-bg);color:#FFD600;border:1px solid #FFD600}
-  /* 納車待ち未完了点滅 */
+  /* 音声入力ボタン */
+  .mic-btn{background:var(--neo-bg);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:6px 8px;cursor:pointer;color:var(--text3);font-size:16px;flex-shrink:0;transition:all .1s}
+  .mic-btn:active{opacity:.7}
+  .mic-btn.listening{border-color:var(--red);color:var(--red);animation:pulse 0.8s infinite}
+  .mic-wrap{display:flex;gap:6px;align-items:center;width:100%}
+  .mic-wrap input,.mic-wrap textarea{flex:1;min-width:0;width:auto}
   @keyframes sold-pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,0,96,0.0);border-color:var(--border)}50%{box-shadow:0 0 0 4px rgba(255,0,96,0.5);border-color:var(--pink)}}
   .sold-alert{animation:sold-pulse 1.5s infinite;border-color:var(--pink)!important}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
@@ -130,9 +135,11 @@
   .modal-title{font-size:15px;font-weight:700;margin-bottom:12px;color:var(--text)}
   .modal-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 14px}
   /* 画像拡大 */
-  .full-wrap{position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:300;display:none;flex-direction:column;align-items:center;justify-content:center;padding:16px}
+  .full-wrap{position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:300;display:none;flex-direction:column;align-items:center;justify-content:flex-start;padding:16px;overflow:hidden}
   .full-wrap.open{display:flex}
-  .full-wrap img{max-width:100%;max-height:56vh;border-radius:10px;object-fit:contain}
+  .full-img-container{flex:1;width:100%;overflow:hidden;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab;min-height:0}
+  .full-img-container:active{cursor:grabbing}
+  .full-wrap img{max-width:100%;max-height:100%;border-radius:10px;object-fit:contain;transform-origin:center center;transition:transform 0.1s ease;user-select:none;-webkit-user-drag:none}
   .close-x{position:absolute;top:16px;right:16px;color:#fff;font-size:16px;cursor:pointer;background:rgba(255,255,255,0.15);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center}
   .full-btns{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center}
   .full-btns .btn{padding:10px 16px;font-size:13px;flex-direction:column;gap:2px;min-width:72px;line-height:1.2}
@@ -209,7 +216,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.68</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.70</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -291,7 +298,10 @@
       <button class="btn btn-sm btn-primary" onclick="applyBulk()">実行</button>
     </div>
     <div class="search-row">
-      <input type="text" id="stock-search" placeholder="車名・色・仕入先など部分一致..." oninput="renderStock()">
+      <div class="mic-wrap">
+        <input type="text" id="stock-search" placeholder="車名・色・仕入先など部分一致..." oninput="renderStock()">
+        <button class="mic-btn" onclick="startVoice('stock-search',this)">🎤</button>
+      </div>
       <select id="stock-filter" onchange="renderStock()" style="font-size:11px">
         <option value="">すべて</option>
         <optgroup label="▼絞り込み">
@@ -329,7 +339,10 @@
       <button class="btn btn-sm btn-primary" onclick="openUpload()">＋ アップロード</button>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:8px">
-      <input type="text" id="insp-search" placeholder="車名・メモで検索..." oninput="renderInspections()" style="flex:1;min-width:0">
+      <div class="mic-wrap" style="flex:1">
+        <input type="text" id="insp-search" placeholder="車名・メモで検索..." oninput="renderInspections()" style="min-width:0">
+        <button class="mic-btn" onclick="startVoice('insp-search',this)">🎤</button>
+      </div>
       <button class="btn btn-sm" id="btn-parts-filter" onclick="toggleInspPartsFilter()" style="border-color:var(--red);color:var(--red);font-size:11px;flex-shrink:0">🔩 部品</button>
     </div>
     <div class="insp-bulk-bar">
@@ -400,9 +413,9 @@
     <div id="vehicle-search-results" style="display:none;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);max-height:180px;overflow-y:auto;margin-bottom:6px"></div>
     <input type="hidden" id="up-vehicle-id">
     <p class="lbl">車種名を直接入力（車両未選択の場合）</p>
-    <input type="text" id="up-name" placeholder="例：トヨタ プリウス">
+    <div class="mic-wrap"><input type="text" id="up-name" placeholder="例：トヨタ プリウス"><button class="mic-btn" onclick="startVoice('up-name',this)">🎤</button></div>
     <p class="lbl">メモ（任意）</p>
-    <input type="text" id="up-memo" placeholder="例：オイル漏れあり">
+    <div class="mic-wrap"><input type="text" id="up-memo" placeholder="例：オイル漏れあり"><button class="mic-btn" onclick="startVoice('up-memo',this)">🎤</button></div>
     <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px;background:var(--pink-bg);border-radius:var(--radius-sm);border:1px solid var(--pink)">
       <input type="checkbox" id="up-parts" style="width:20px;height:20px;accent-color:var(--pink)">
       <label for="up-parts" style="font-size:14px;font-weight:700;color:var(--text);cursor:pointer">🔩 部品注文あり</label>
@@ -479,13 +492,15 @@
 <!-- 画像拡大表示 -->
 <div class="full-wrap" id="full-img">
   <div class="close-x" onclick="closeFullImg()">✕</div>
-  <img id="full-img-el" src="">
-  <div style="color:#fff;margin-top:8px;text-align:center">
+  <div class="full-img-container" id="full-img-container">
+    <img id="full-img-el" src="">
+  </div>
+  <div style="color:#fff;margin-top:8px;text-align:center;flex-shrink:0">
     <p id="full-img-name" style="font-size:13px;font-weight:700"></p>
     <p id="full-img-meta" style="font-size:11px;opacity:0.65;margin-top:2px"></p>
   </div>
-  <div class="full-btns" id="full-btns"></div>
-  <div id="full-img-memo-area"></div>
+  <div class="full-btns" id="full-btns" style="flex-shrink:0"></div>
+  <div id="full-img-memo-area" style="flex-shrink:0;width:100%"></div>
 </div>
 
 <script type="module">
@@ -595,7 +610,128 @@ function setSyncSt(t,s='ok'){
 function showLoading(msg){document.getElementById('loading-msg').textContent=msg||'処理中...';document.getElementById('loading').style.display='flex';}
 function hideLoading(){document.getElementById('loading').style.display='none';}
 
-// ===== データ取得（10秒ポーリング）=====
+// ===== フルスクリーム画像ズーム =====
+(function(){
+  let scale=1,lastScale=1;
+  let tx=0,ty=0,lastTx=0,lastTy=0;
+  let initDist=0;
+  let lastTap=0;
+  let dragStart=null;
+
+  function applyTransform(smooth){
+    const img=document.getElementById('full-img-el');
+    if(!img)return;
+    img.style.transition=smooth?'transform 0.2s ease':'transform 0.05s ease';
+    img.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;
+  }
+  function resetTransform(){
+    scale=1;tx=0;ty=0;lastScale=1;lastTx=0;lastTy=0;
+    applyTransform(true);
+  }
+  function clampTranslate(){
+    const img=document.getElementById('full-img-el');
+    const con=document.getElementById('full-img-container');
+    if(!img||!con)return;
+    const iw=img.naturalWidth||img.offsetWidth;
+    const ih=img.naturalHeight||img.offsetHeight;
+    const cw=con.offsetWidth,ch=con.offsetHeight;
+    const dw=Math.max(0,(iw*scale-cw)/2);
+    const dh=Math.max(0,(ih*scale-ch)/2);
+    tx=Math.max(-dw,Math.min(dw,tx));
+    ty=Math.max(-dh,Math.min(dh,ty));
+  }
+
+  document.addEventListener('touchstart',e=>{
+    const con=document.getElementById('full-img-container');
+    if(!con||!con.contains(e.target))return;
+    if(e.touches.length===2){
+      initDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+      lastScale=scale;lastTx=tx;lastTy=ty;
+    } else if(e.touches.length===1){
+      // ダブルタップ
+      const now=Date.now();
+      if(now-lastTap<300){
+        if(scale>1){resetTransform();}else{scale=2.5;applyTransform(true);}
+        lastTap=0;return;
+      }
+      lastTap=now;
+      dragStart={x:e.touches[0].clientX-tx,y:e.touches[0].clientY-ty};
+    }
+  },{passive:true});
+
+  document.addEventListener('touchmove',e=>{
+    const con=document.getElementById('full-img-container');
+    if(!con||!con.contains(e.target))return;
+    if(e.touches.length===2){
+      e.preventDefault();
+      const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+      scale=Math.max(1,Math.min(5,lastScale*(dist/initDist)));
+      clampTranslate();applyTransform(false);
+    } else if(e.touches.length===1&&scale>1&&dragStart){
+      e.preventDefault();
+      tx=e.touches[0].clientX-dragStart.x;
+      ty=e.touches[0].clientY-dragStart.y;
+      clampTranslate();applyTransform(false);
+    }
+  },{passive:false});
+
+  document.addEventListener('touchend',e=>{
+    if(e.touches.length<2){lastScale=scale;lastTx=tx;lastTy=ty;}
+    dragStart=null;
+  },{passive:true});
+
+  // closeFullImgでリセット
+  const origClose=window.closeFullImg;
+  window.closeFullImg=function(){
+    resetTransform();
+    if(origClose)origClose();
+    else document.getElementById('full-img').classList.remove('open');
+  };
+})();
+let recognition=null;
+let activeRecognition=null;
+function startVoice(targetId,btnEl){
+  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SpeechRecognition){alert('お使いのブラウザは音声入力に対応していません');return;}
+  // 同じボタンを再押しで停止
+  if(activeRecognition&&btnEl.classList.contains('listening')){
+    activeRecognition.stop();return;
+  }
+  // 別の音声入力が動いていれば停止
+  if(activeRecognition){activeRecognition.stop();}
+  recognition=new SpeechRecognition();
+  recognition.lang='ja-JP';
+  recognition.continuous=false;
+  recognition.interimResults=false;
+  recognition.onstart=()=>{
+    btnEl.classList.add('listening');
+    btnEl.textContent='⏹';
+    activeRecognition=recognition;
+  };
+  recognition.onresult=e=>{
+    const el=document.getElementById(targetId);
+    if(!el)return;
+    const text=e.results[0][0].transcript;
+    // textareaは末尾に追加、inputは置き換え
+    if(el.tagName==='TEXTAREA'){el.value=(el.value?el.value+'\n':'')+text;}
+    else{el.value=text;}
+    // oninputイベントを発火（検索欄などに対応）
+    el.dispatchEvent(new Event('input',{bubbles:true}));
+  };
+  recognition.onend=()=>{
+    btnEl.classList.remove('listening');
+    btnEl.textContent='🎤';
+    activeRecognition=null;
+  };
+  recognition.onerror=e=>{
+    btnEl.classList.remove('listening');
+    btnEl.textContent='🎤';
+    activeRecognition=null;
+    if(e.error!=='aborted')alert('音声認識エラー: '+e.error);
+  };
+  recognition.start();
+}
+window.startVoice=startVoice;
 let pollingTimer=null;
 
 async function fetchAll(){
@@ -800,12 +936,12 @@ window.openAction=function(carId,action){
   if(action==='out'){
     // 予約済みの場合、予約時のお客様名を入力欄に初期表示
     const prefill=car.status==='reserved'&&car.borrower?car.borrower:'';
-    body=`<p class="lbl">お客様名</p><input type="text" id="act-b" value="${prefill}" placeholder="例：田中様" style="margin-bottom:12px">
-    <div style="display:flex;gap:8px"><button class="btn" style="flex:1" onclick="closeModal('modal-action')">キャンセル</button>
+    body=`<p class="lbl">お客様名</p><div class="mic-wrap"><input type="text" id="act-b" value="${prefill}" placeholder="例：田中様" style="margin-bottom:0;flex:1"><button class="mic-btn" onclick="startVoice('act-b',this)">🎤</button></div>
+    <div style="display:flex;gap:8px;margin-top:12px"><button class="btn" style="flex:1" onclick="closeModal('modal-action')">キャンセル</button>
     <button class="btn btn-primary" style="flex:1" onclick="doAction('out','${carId}')">貸出確定</button></div>`;
   } else if(action==='reserve')
-    body=`<p class="lbl">お客様名</p><input type="text" id="act-b" placeholder="例：鈴木様" style="margin-bottom:12px">
-    <div style="display:flex;gap:8px"><button class="btn" style="flex:1" onclick="closeModal('modal-action')">キャンセル</button>
+    body=`<p class="lbl">お客様名</p><div class="mic-wrap"><input type="text" id="act-b" placeholder="例：鈴木様" style="margin-bottom:0;flex:1"><button class="mic-btn" onclick="startVoice('act-b',this)">🎤</button></div>
+    <div style="display:flex;gap:8px;margin-top:12px"><button class="btn" style="flex:1" onclick="closeModal('modal-action')">キャンセル</button>
     <button class="btn btn-amber" style="flex:1" onclick="doAction('reserve','${carId}')">予約確定</button></div>`;
   else if(action==='return')
     body=`<p style="font-size:13px;margin-bottom:12px">${car.borrower||''}さんから返却しますか？</p>
@@ -1441,7 +1577,10 @@ window.openStockDetail=function(id){
     <p class="lbl">メモ</p>
     <div style="display:flex;gap:6px;margin-bottom:10px">
       <textarea id="sd-memo" rows="2" style="flex:1;margin-bottom:0">${v.memo||''}</textarea>
-      <button class="btn btn-primary btn-sm" style="align-self:stretch" onclick="saveSD('${id}')">保存</button>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <button class="mic-btn" onclick="startVoice('sd-memo',this)">🎤</button>
+        <button class="btn btn-primary btn-sm" style="align-self:stretch" onclick="saveSD('${id}')">保存</button>
+      </div>
     </div>
     ${ins.length?`
     <div style="margin-bottom:10px">
@@ -2012,7 +2151,10 @@ window.viewPhotoById=async function(id){
     memoArea.innerHTML=`
       <div style="display:flex;gap:6px;padding:8px 12px;background:var(--surface2);border-top:1px solid var(--border)">
         <textarea id="full-img-memo-input" rows="2" placeholder="追加整備メモなど..." style="flex:1;font-size:12px;resize:none">${ins.inspMemo||''}</textarea>
-        <button class="btn btn-primary btn-sm" onclick="saveInspMemo('${id}')">保存</button>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <button class="mic-btn" onclick="startVoice('full-img-memo-input',this)">🎤</button>
+          <button class="btn btn-primary btn-sm" onclick="saveInspMemo('${id}')">保存</button>
+        </div>
       </div>`;
   }
 
