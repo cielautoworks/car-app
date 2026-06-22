@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="ciel_autoworks_icon.ico">
 <link rel="apple-touch-icon" href="ciel_autoworks_192.png">
 <link rel="manifest" href="manifest.json">
@@ -61,9 +61,7 @@
   .btn-orange{background:var(--neo-bg);border-color:var(--orange);color:var(--orange)}
   .btn-gray{background:var(--neo-bg);border-color:var(--gray);color:var(--gray)}
   .btn-cyan{background:var(--neo-bg);border-color:var(--cyan);color:var(--cyan)}
-  .btn-purple{background:var(--neo-bg);border-color:var(--purple);color:var(--purple)}
   /* 完了状態のトグルボタン */
-  .btn-done{background:var(--neo-bg);border-color:var(--green);color:var(--green);font-weight:700}
   /* ビビッドバッジ */
   .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;letter-spacing:.02em}
   .b-undelivered{background:var(--neo-bg);color:var(--purple);border:1px solid var(--purple)}
@@ -145,9 +143,9 @@
   .full-img-header .close-x{background:rgba(255,255,255,0.15);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:16px;flex-shrink:0}
   .full-img-header .header-info{flex:1;min-width:0}
   .full-img-header .header-info p{margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .full-img-container{flex:1;width:100%;overflow:hidden;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab;min-height:0}
-  .full-img-container:active{cursor:grabbing}
-  .full-wrap img{max-width:100%;max-height:100%;border-radius:10px;object-fit:contain;transform-origin:center center;transition:transform 0.1s ease;user-select:none;-webkit-user-drag:none}
+  .full-img-container{flex:1;width:100%;overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:0}
+  
+  .full-wrap img{max-width:100%;max-height:100%;border-radius:10px;object-fit:contain;transform-origin:center center;transition:transform 0.1s ease;}
   .full-btns{display:flex;gap:8px;padding:10px 12px;flex-wrap:wrap;justify-content:center;flex-shrink:0}
   .full-btns .btn{padding:10px 16px;font-size:13px;flex-direction:column;gap:2px;min-width:72px;line-height:1.2}
   /* 点検シート */
@@ -168,9 +166,6 @@
   /* 在庫カード */
   .stock-item{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:10px;margin-bottom:8px;box-shadow:var(--shadow)}
   .stock-item.checked{border-color:var(--accent)}
-  .stock-item-row{display:flex;gap:8px;align-items:flex-start}
-  .stock-item-main{flex:1;min-width:0}
-  .stock-item-btns{display:flex;flex-direction:column;gap:5px;flex-shrink:0;min-width:70px}
   /* アクションボタン：正方形・横並び、完了は薄くなる */
   .action-btns-row{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
   .action-btn{display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:var(--radius-sm);border:1.5px solid;cursor:pointer;font-size:12px;font-weight:700;text-align:center;font-family:inherit;transition:all .15s;flex-direction:column;line-height:1.3;padding:4px}
@@ -219,13 +214,17 @@
   <p style="font-size:13px;color:var(--text2)" id="loading-msg">Firebaseに接続中...</p>
 </div>
 
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="ic-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="9" y1="22" x2="15" y2="22"/></symbol>
+  <symbol id="ic-pen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></symbol>
+</svg>
 <div class="app">
   <div class="header">
-    <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
+    <div oncontextmenu="toggleDebugPanel();return false;">
       <div class="header-title">🚗 ciel autoworks</div>
       <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.73</span></div>
     </div>
-    <span class="sync-badge connecting" id="sync-st">● 接続中</span>
+    <button onclick="manualRefresh()" style="background:none;border:none;cursor:pointer;padding:4px 6px;color:var(--text3);font-size:18px" title="更新">🔄</button><span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
   <div class="tabs">
     <div class="tab" onclick="switchTab('loaner')">代車/レンタ</div>
@@ -253,7 +252,6 @@
       <span style="font-size:12px;font-weight:700;color:var(--text2)">一覧</span>
       <div style="display:flex;gap:5px">
         <button class="btn btn-sm" style="background:var(--purple-bg);border-color:var(--purple)" onclick="openHistory()">📋 履歴</button>
-        <button class="btn btn-sm btn-gray" onclick="openAddFromStock('loaner')">販売車から追加</button>
         <button class="btn btn-sm btn-success" onclick="openAddCar('loaner')">＋ 代車</button>
         <button class="btn btn-sm btn-cyan" onclick="openAddCar('rental')">＋ レンタ</button>
       </div>
@@ -307,8 +305,8 @@
       <div class="mic-wrap">
         <input type="text" id="stock-search" placeholder="車名・色・仕入先など部分一致..." oninput="renderStock()">
         <div class="mic-sep"></div>
-        <button class="pen-btn" onclick="document.getElementById('stock-search').focus()" title="テキスト入力"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-        <button class="mic-btn" onclick="startVoice('stock-search',this)" title="音声入力"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="9" y1="22" x2="15" y2="22"/></svg></button>
+        <button class="pen-btn" onclick="document.getElementById('stock-search').focus()" title="テキスト入力"><svg width="18" height="18"><use href="#ic-pen"/></svg></button>
+        <button class="mic-btn" onclick="startVoice('stock-search',this)" title="音声入力"><svg width="18" height="18"><use href="#ic-mic"/></svg></button>
       </div>
       <select id="stock-filter" onchange="renderStock()" style="font-size:11px">
         <option value="">すべて</option>
@@ -348,10 +346,9 @@
     </div>
     <div style="display:flex;gap:6px;margin-bottom:8px">
       <div class="mic-wrap" style="flex:1">
-        <input type="text" id="insp-search" placeholder="車名・メモで検索..." oninput="renderInspections()">
+        <input type="text" id="insp-search" placeholder="車名・色・型式・車台番号で検索..." oninput="renderInspections()">
         <div class="mic-sep"></div>
-        <button class="pen-btn" onclick="document.getElementById('insp-search').focus()" title="テキスト入力"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-        <button class="mic-btn" onclick="startVoice('insp-search',this)" title="音声入力"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="9" y1="22" x2="15" y2="22"/></svg></button>
+        <button class="mic-btn" onclick="startVoice('insp-search',this)" title="音声入力"><svg width="18" height="18"><use href="#ic-mic"/></svg></button>
       </div>
       <button class="btn btn-sm" id="btn-parts-filter" onclick="toggleInspPartsFilter()" style="border-color:var(--red);color:var(--red);font-size:11px;flex-shrink:0">🔩 部品</button>
     </div>
@@ -395,13 +392,6 @@
     </div>
   </div>
 </div>
-<div class="modal-wrap" id="modal-add-from-stock">
-  <div class="modal-box"><div class="modal-handle"></div>
-    <p class="modal-title" id="afs-title">販売車から追加</p>
-    <div id="stock-for-loaner-list"></div>
-    <button class="btn" style="width:100%;margin-top:12px" onclick="closeModal('modal-add-from-stock')">閉じる</button>
-  </div>
-</div>
 <div class="modal-wrap" id="modal-upload">
   <div class="modal-box"><div class="modal-handle"></div>
     <p class="modal-title">点検シートアップロード</p>
@@ -423,15 +413,15 @@
     <div id="vehicle-search-results" style="display:none;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);max-height:180px;overflow-y:auto;margin-bottom:6px"></div>
     <input type="hidden" id="up-vehicle-id">
     <p class="lbl">車種名を直接入力（車両未選択の場合）</p>
-    <div class="mic-wrap"><input type="text" id="up-name" placeholder="例：トヨタ プリウス"><div class="mic-sep"></div><button class="pen-btn" onclick="document.getElementById('up-name').focus()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="mic-btn" onclick="startVoice('up-name',this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="9" y1="22" x2="15" y2="22"/></svg></button></div>
+    <div class="mic-wrap"><input type="text" id="up-name" placeholder="例：トヨタ プリウス"><div class="mic-sep"></div><button class="pen-btn" onclick="document.getElementById('up-name').focus()"><svg width="18" height="18"><use href="#ic-pen"/></svg></button><button class="mic-btn" onclick="startVoice('up-name',this)"><svg width="18" height="18"><use href="#ic-mic"/></svg></button></div>
     <p class="lbl">メモ（任意）</p>
-    <div class="mic-wrap"><input type="text" id="up-memo" placeholder="例：オイル漏れあり"><div class="mic-sep"></div><button class="pen-btn" onclick="document.getElementById('up-memo').focus()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="mic-btn" onclick="startVoice('up-memo',this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="9" y1="22" x2="15" y2="22"/></svg></button></div>
+    <div class="mic-wrap"><input type="text" id="up-memo" placeholder="例：オイル漏れあり"><div class="mic-sep"></div><button class="pen-btn" onclick="document.getElementById('up-memo').focus()"><svg width="18" height="18"><use href="#ic-pen"/></svg></button><button class="mic-btn" onclick="startVoice('up-memo',this)"><svg width="18" height="18"><use href="#ic-mic"/></svg></button></div>
     <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px;background:var(--pink-bg);border-radius:var(--radius-sm);border:1px solid var(--pink)">
       <input type="checkbox" id="up-parts" style="width:20px;height:20px;accent-color:var(--pink)">
       <label for="up-parts" style="font-size:14px;font-weight:700;color:var(--text);cursor:pointer">🔩 部品注文あり</label>
     </div>
     <p class="lbl">写真</p>
-    <div id="drop-insp" style="border:2px dashed var(--border2);border-radius:var(--radius-sm);padding:16px;text-align:center;cursor:pointer;color:var(--text3);background:var(--surface2)" onclick="document.getElementById('file-input').click()">
+    <div id="drop-insp" style="display:none" style="border:2px dashed var(--border2);border-radius:var(--radius-sm);padding:16px;text-align:center;cursor:pointer;color:var(--text3);background:var(--surface2)" onclick="document.getElementById('file-input').click()">
       <div id="up-preview"><div style="font-size:24px">📷</div><p style="font-size:13px">タップして写真を選択</p><p style="font-size:11px;margin-top:2px">PCはここにドロップも可</p></div>
     </div>
     <input type="file" id="file-input" accept="image/*" style="display:none" onchange="previewPhoto(event)" onclick="this.value=null">
@@ -444,22 +434,6 @@
 </div>
 <div class="modal-wrap" id="modal-stock-detail"><div class="modal-box"><div class="modal-handle"></div><p class="modal-title" id="sd-title"></p><div id="sd-body"></div></div></div>
 
-<!-- 出品票アップロードモーダル -->
-<div class="modal-wrap" id="modal-listing-upload">
-  <div class="modal-box"><div class="modal-handle"></div>
-    <p class="modal-title">出品票を追加</p>
-    <p class="lbl">写真</p>
-    <div id="drop-listing" style="border:2px dashed var(--border2);border-radius:var(--radius-sm);padding:16px;text-align:center;cursor:pointer;color:var(--text3);background:var(--surface2)" onclick="document.getElementById('listing-file-input').click()">
-      <div id="listing-preview"><div style="font-size:24px">📷</div><p style="font-size:13px">タップして写真を選択</p><p style="font-size:11px;margin-top:2px">PCはここにドロップも可</p></div>
-    </div>
-    <input type="file" id="listing-file-input" accept="image/*" style="display:none" onclick="this.value=null" onchange="previewListingPhoto(event)">
-    <div id="listing-progress" style="display:none;margin-top:8px;font-size:12px;color:var(--green);font-weight:700;text-align:center"></div>
-    <div style="display:flex;gap:8px;margin-top:14px">
-      <button class="btn" style="flex:1" onclick="closeModal('modal-listing-upload')">キャンセル</button>
-      <button class="btn btn-primary" style="flex:1" id="btn-save-listing" onclick="saveListing()">保存</button>
-    </div>
-  </div>
-</div>
 <div class="modal-wrap" id="modal-history">
   <div class="modal-box"><div class="modal-handle"></div>
     <p class="modal-title">📋 貸出履歴</p>
@@ -472,10 +446,9 @@
     <p class="modal-title">履歴を編集</p>
     <p style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px" id="edit-history-car"></p>
     <input type="hidden" id="edit-history-id">
-    <p class="lbl">お客様名</p><input type="text" id="edit-history-borrower" placeholder="例：田中様">
     <p class="lbl">貸出日（例：05/01）</p><input type="text" id="edit-history-outdate" placeholder="05/01">
     <p class="lbl">返却日（例：05/05）</p><input type="text" id="edit-history-returndate" placeholder="05/05">
-    <p style="font-size:10px;color:var(--text3);margin-top:4px">※日数は貸出日と返却日から自動計算されます</p>
+    <p style="font-size:10px;color:var(--text3);margin-top:4px">※日数は自動計算されます</p>
     <div style="display:flex;gap:8px;margin-top:14px">
       <button class="btn" style="flex:1" onclick="closeModal('modal-edit-history')">キャンセル</button>
       <button class="btn btn-primary" style="flex:1" onclick="saveEditHistory()">保存</button>
@@ -600,6 +573,15 @@ function toFullWidth(s){
   return result.replace(/[A-Za-z0-9]/g,c=>String.fromCharCode(c.charCodeAt(0)+0xFEE0));
 }
 
+function normalizeQ(s){
+  if(!s)return '';
+  return s
+    .replace(/[Ａ-Ｚａ-ｚ０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0))
+    .replace(/　/g,' ')
+    .replace(/[\u30A1-\u30F6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60))
+    .replace(/[ｦ-ﾟ]+/g,s=>toFullWidth(s).replace(/[\u30A1-\u30F6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60)))
+    .toLowerCase();
+}
 // 西暦→和暦変換
 function toJapaneseYear(dateStr){
   if(!dateStr)return '';
@@ -622,144 +604,32 @@ function setSyncSt(t,s='ok'){
 function showLoading(msg){document.getElementById('loading-msg').textContent=msg||'処理中...';document.getElementById('loading').style.display='flex';}
 function hideLoading(){document.getElementById('loading').style.display='none';}
 
-// ===== フルスクリーム画像ズーム =====
-(function(){
-  let scale=1,lastScale=1;
-  let tx=0,ty=0,lastTx=0,lastTy=0;
-  let initDist=0;
-  let lastTap=0;
-  let dragStart=null;
-
-  function applyTransform(smooth){
-    const img=document.getElementById('full-img-el');
-    if(!img)return;
-    img.style.transition=smooth?'transform 0.2s ease':'transform 0.05s ease';
-    img.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;
-  }
-  function resetTransform(){
-    scale=1;tx=0;ty=0;lastScale=1;lastTx=0;lastTy=0;
-    applyTransform(true);
-  }
-  function clampTranslate(){
-    const img=document.getElementById('full-img-el');
-    const con=document.getElementById('full-img-container');
-    if(!img||!con)return;
-    const iw=img.naturalWidth||img.offsetWidth;
-    const ih=img.naturalHeight||img.offsetHeight;
-    const cw=con.offsetWidth,ch=con.offsetHeight;
-    const dw=Math.max(0,(iw*scale-cw)/2);
-    const dh=Math.max(0,(ih*scale-ch)/2);
-    tx=Math.max(-dw,Math.min(dw,tx));
-    ty=Math.max(-dh,Math.min(dh,ty));
-  }
-
-  document.addEventListener('touchstart',e=>{
-    const con=document.getElementById('full-img-container');
-    if(!con||!con.contains(e.target))return;
-    if(e.touches.length===2){
-      initDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-      lastScale=scale;lastTx=tx;lastTy=ty;
-    } else if(e.touches.length===1){
-      // ダブルタップ
-      const now=Date.now();
-      if(now-lastTap<300){
-        if(scale>1){resetTransform();}else{scale=2.5;applyTransform(true);}
-        lastTap=0;return;
-      }
-      lastTap=now;
-      dragStart={x:e.touches[0].clientX-tx,y:e.touches[0].clientY-ty};
-    }
-  },{passive:true});
-
-  document.addEventListener('touchmove',e=>{
-    const con=document.getElementById('full-img-container');
-    if(!con||!con.contains(e.target))return;
-    if(e.touches.length===2){
-      e.preventDefault();
-      const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-      scale=Math.max(1,Math.min(5,lastScale*(dist/initDist)));
-      clampTranslate();applyTransform(false);
-    } else if(e.touches.length===1&&scale>1&&dragStart){
-      e.preventDefault();
-      tx=e.touches[0].clientX-dragStart.x;
-      ty=e.touches[0].clientY-dragStart.y;
-      clampTranslate();applyTransform(false);
-    }
-  },{passive:false});
-
-  document.addEventListener('touchend',e=>{
-    if(e.touches.length<2){lastScale=scale;lastTx=tx;lastTy=ty;}
-    dragStart=null;
-  },{passive:true});
-
-  // 下スワイプで閉じる
-  let swipeStartY=0;
-  document.addEventListener('touchstart',e=>{
-    const wrap=document.getElementById('full-img');
-    if(wrap&&wrap.classList.contains('open')&&e.touches.length===1){
-      swipeStartY=e.touches[0].clientY;
-    }
-  },{passive:true});
-  document.addEventListener('touchend',e=>{
-    const wrap=document.getElementById('full-img');
-    if(!wrap||!wrap.classList.contains('open'))return;
-    if(e.changedTouches.length===1&&scale<=1){
-      const dy=e.changedTouches[0].clientY-swipeStartY;
-      if(dy>80)window.closeFullImg();
-    }
-  },{passive:true});
-  const origClose=window.closeFullImg;
-  window.closeFullImg=function(){
-    resetTransform();
-    if(origClose)origClose();
-    else document.getElementById('full-img').classList.remove('open');
-  };
-})();
-const MIC_SVG=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="9" y1="22" x2="15" y2="22"/></svg>`;
-const PEN_SVG=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+// 画像閉じる
+const MIC_SVG=`<svg width="18" height="18"><use href="#ic-mic"/></svg>`;
+const PEN_SVG=`<svg width="18" height="18"><use href="#ic-pen"/></svg>`;
 let recognition=null;
 let activeRecognition=null;
 function startVoice(targetId,btnEl){
-  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SpeechRecognition){alert('お使いのブラウザは音声入力に対応していません');return;}
-  // 同じボタンを再押しで停止
-  if(activeRecognition&&btnEl.classList.contains('listening')){
-    activeRecognition.stop();return;
-  }
-  // 別の音声入力が動いていれば停止
-  if(activeRecognition){activeRecognition.stop();}
-  recognition=new SpeechRecognition();
-  recognition.lang='ja-JP';
-  recognition.continuous=false;
-  recognition.interimResults=false;
-  recognition.onstart=()=>{
-    btnEl.classList.add('listening');
-    btnEl.innerHTML=MIC_SVG;
-    activeRecognition=recognition;
-  };
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){alert('お使いのブラウザは音声入力に対応していません');return;}
+  if(activeRecognition&&btnEl.classList.contains('listening')){activeRecognition.stop();return;}
+  if(activeRecognition)activeRecognition.stop();
+  recognition=new SR();
+  recognition.lang='ja-JP';recognition.continuous=false;recognition.interimResults=false;
+  const reset=()=>{btnEl.classList.remove('listening');btnEl.innerHTML=MIC_SVG;activeRecognition=null;};
+  recognition.onstart=()=>{btnEl.classList.add('listening');btnEl.innerHTML=MIC_SVG;activeRecognition=recognition;};
   recognition.onresult=e=>{
-    const el=document.getElementById(targetId);
-    if(!el)return;
+    const el=document.getElementById(targetId);if(!el)return;
     const text=e.results[0][0].transcript;
-    if(el.tagName==='TEXTAREA'){el.value=(el.value?el.value+'\n':'')+text;}
-    else{el.value=text;}
+    el.value=(el.tagName==='TEXTAREA'&&el.value)?el.value+'
+'+text:text;
     el.dispatchEvent(new Event('input',{bubbles:true}));
   };
-  recognition.onend=()=>{
-    btnEl.classList.remove('listening');
-    btnEl.innerHTML=MIC_SVG;
-    activeRecognition=null;
-  };
-  recognition.onerror=e=>{
-    btnEl.classList.remove('listening');
-    btnEl.innerHTML=MIC_SVG;
-    activeRecognition=null;
-    if(e.error!=='aborted')alert('音声認識エラー: '+e.error);
-  };
+  recognition.onend=reset;
+  recognition.onerror=e=>{reset();if(e.error!=='aborted')alert('音声認識エラー: '+e.error);};
   recognition.start();
 }
 window.startVoice=startVoice;
-let pollingTimer=null;
 
 async function fetchAll(){
   try{
@@ -797,20 +667,36 @@ function startListeners(){
   });
   // 起動時はfetchAllを直接実行（接続状態に依存しない）
   fetchAll();
-  // 30秒ごとにポーリング（画面表示中のみ）
-  pollingTimer=setInterval(()=>{
-    if(!document.hidden)fetchAll();
-  },30000);
-  // タブが再表示された時に即時取得
-  document.addEventListener('visibilitychange',()=>{
-    if(!document.hidden)fetchAll();
-  });
 }
 
-async function dbSet(p,d){setSyncSt('● 保存中...','saving');await set(ref(db,p),d);await fetchAll();}
-async function dbUpd(p,d){setSyncSt('● 保存中...','saving');await update(ref(db,p),d);await fetchAll();}
-async function dbDel(p){setSyncSt('● 保存中...','saving');await remove(ref(db,p));await fetchAll();}
-function updateCsvCount(){const n=Object.keys(stock).length;document.getElementById('csv-count').textContent=n?`全${n}台`:'';document.getElementById('filter-count').textContent='';};
+async function dbSet(p,d){setSyncSt('● 保存中...','saving');await set(ref(db,p),d);localUpdate(p,d);}
+async function dbUpd(p,d){setSyncSt('● 保存中...','saving');await update(ref(db,p),d);localUpdate(p,d);}
+async function dbDel(p){setSyncSt('● 保存中...','saving');await remove(ref(db,p));localDelete(p);}
+
+function localUpdate(p,d){
+  const parts=p.split('/');
+  if(parts[0]==='stock'){if(parts[1])stock[parts[1]]=Object.assign(stock[parts[1]]||{},d);}
+  else if(parts[0]==='cars'){if(parts[1])cars[parts[1]]=Object.assign(cars[parts[1]]||{},d);}
+  else if(parts[0]==='inspections'){if(parts[1])inspections[parts[1]]=Object.assign(inspections[parts[1]]||{},d);}
+  else if(parts[0]==='listings'){if(parts[1])listings[parts[1]]=Object.assign(listings[parts[1]]||{},d);}
+  else if(parts[0]==='loanHistories'){if(parts[1])loanHistories[parts[1]]=Object.assign(loanHistories[parts[1]]||{},d);}
+  setSyncSt('● 同期中','ok');
+  renderLoaner();renderStock();renderInspections();
+}
+function localDelete(p){
+  const parts=p.split('/');
+  if(parts[0]==='stock'&&parts[1])delete stock[parts[1]];
+  else if(parts[0]==='cars'&&parts[1])delete cars[parts[1]];
+  else if(parts[0]==='inspections'&&parts[1])delete inspections[parts[1]];
+  else if(parts[0]==='listings'&&parts[1])delete listings[parts[1]];
+  else if(parts[0]==='loanHistories'&&parts[1])delete loanHistories[parts[1]];
+  setSyncSt('● 同期中','ok');
+  renderLoaner();renderStock();renderInspections();
+}
+async function manualRefresh(){
+  setSyncSt('● 更新中...','connecting');
+  await fetchAll();
+}
 
 window.switchTab=function(tab){
   ['loaner','stock','inspection'].forEach(t=>document.getElementById('tab-'+t).classList.toggle('hidden',t!==tab));
@@ -821,19 +707,32 @@ window.switchTab=function(tab){
 };
 window.openModal =id=>document.getElementById(id).classList.add('open');
 window.closeModal=id=>document.getElementById(id).classList.remove('open');
-// modal-wrap（背景）タップで閉じる
-document.addEventListener('click',e=>{
-  if(e.target.classList.contains('modal-wrap')&&e.target.classList.contains('open')){
-    e.target.classList.remove('open');
-  }
-});
-// modal-handle（バー）タップで閉じる
-document.addEventListener('click',e=>{
-  if(e.target.classList.contains('modal-handle')){
-    const wrap=e.target.closest('.modal-wrap');
-    if(wrap)wrap.classList.remove('open');
-  }
-});
+
+// モーダル閉じ：背景タップ・ハンドルタップ・下スワイプ共通
+(function(){
+  let touchStartY=0,touchTarget=null;
+  document.addEventListener('touchstart',e=>{
+    touchStartY=e.touches[0].clientY;
+    touchTarget=e.target;
+  },{passive:true});
+  document.addEventListener('touchend',e=>{
+    const dy=e.changedTouches[0].clientY-touchStartY;
+    const handle=touchTarget?.closest?.('.modal-handle')||touchTarget?.classList?.contains('modal-handle');
+    const isHandle=touchTarget?.classList?.contains('modal-handle');
+    if(isHandle||dy>60){
+      const wrap=touchTarget?.closest?.('.modal-wrap');
+      if(wrap?.classList?.contains('open'))wrap.classList.remove('open');
+    }
+  },{passive:true});
+  document.addEventListener('click',e=>{
+    if(e.target.classList.contains('modal-wrap')&&e.target.classList.contains('open'))
+      e.target.classList.remove('open');
+    if(e.target.classList.contains('modal-handle')){
+      const wrap=e.target.closest('.modal-wrap');
+      if(wrap)wrap.classList.remove('open');
+    }
+  });
+})();
 
 // 代車フィルタートグル
 window.toggleLoanerFilter=function(f){
@@ -954,11 +853,11 @@ window.openAction=function(carId,action){
   if(action==='out'){
     // 予約済みの場合、予約時のお客様名を入力欄に初期表示
     const prefill=car.status==='reserved'&&car.borrower?car.borrower:'';
-    body=`<p class="lbl">お客様名</p><div class="mic-wrap"><input type="text" id="act-b" value="${prefill}" placeholder="例：田中様" style="margin-bottom:0;flex:1"><button class="mic-btn" onclick="startVoice('act-b',this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="9" y1="22" x2="15" y2="22"/></svg></button></div>
+    body=`<p class="lbl">お客様名</p><div class="mic-wrap"><input type="text" id="act-b" value="${prefill}" placeholder="例：田中様" style="margin-bottom:0;flex:1"><button class="mic-btn" onclick="startVoice('act-b',this)"><svg width="18" height="18"><use href="#ic-mic"/></svg></button></div>
     <div style="display:flex;gap:8px;margin-top:12px"><button class="btn" style="flex:1" onclick="closeModal('modal-action')">キャンセル</button>
     <button class="btn btn-primary" style="flex:1" onclick="doAction('out','${carId}')">貸出確定</button></div>`;
   } else if(action==='reserve')
-    body=`<p class="lbl">お客様名</p><div class="mic-wrap"><input type="text" id="act-b" placeholder="例：鈴木様" style="margin-bottom:0;flex:1"><button class="mic-btn" onclick="startVoice('act-b',this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="9" y1="22" x2="15" y2="22"/></svg></button></div>
+    body=`<p class="lbl">お客様名</p><div class="mic-wrap"><input type="text" id="act-b" placeholder="例：鈴木様" style="margin-bottom:0;flex:1"><button class="mic-btn" onclick="startVoice('act-b',this)"><svg width="18" height="18"><use href="#ic-mic"/></svg></button></div>
     <div style="display:flex;gap:8px;margin-top:12px"><button class="btn" style="flex:1" onclick="closeModal('modal-action')">キャンセル</button>
     <button class="btn btn-amber" style="flex:1" onclick="doAction('reserve','${carId}')">予約確定</button></div>`;
   else if(action==='return')
@@ -1089,22 +988,6 @@ window.removeCar=async function(id){
   }
   await dbDel(`cars/${id}`);
 };
-window.openAddFromStock=function(type){
-  addCarType=type;
-  document.getElementById('afs-title').textContent=type==='rental'?'販売車からレンタカーに追加':'販売車から代車に追加';
-  const el=document.getElementById('stock-for-loaner-list');
-  const avail=Object.values(stock).filter(v=>!['delivered'].includes(v.status1||'undelivered'));
-  if(!avail.length){el.innerHTML='<p style="text-align:center;color:var(--text3);padding:16px 0">対象の販売車がありません</p>';openModal('modal-add-from-stock');return;}
-  el.innerHTML=avail.map(v=>{
-    const already=Object.values(cars).some(c=>c.stockId===v.id);
-    return`<div class="item-row" style="align-items:center">
-      <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px">${v.name}</div>
-      <div style="font-size:11px;color:var(--text2)">${v.vin||''} ${v.color?'🎨 '+v.color:''}</div></div>
-      ${already?'<span class="badge b-loan-tag">登録済</span>':`<button class="btn btn-sm btn-blue" onclick="addFromStock('${v.id}')">追加</button>`}
-    </div>`;
-  }).join('');
-  openModal('modal-add-from-stock');
-};
 window.addFromStock=async function(vid){
   const v=stock[vid];if(!v)return;
   if(Object.values(cars).some(c=>c.stockId===vid)){alert('すでに登録されています');return;}
@@ -1113,7 +996,6 @@ window.addFromStock=async function(vid){
     dbSet(`cars/${id}`,{id,name:v.name,plate:v.regNo||'',status:'available',carType:addCarType,fromStock:true,stockId:vid,addedAt:nowTs()}),
     dbUpd(`stock/${vid}`,{isLoaner:true,status1:newS1})
   ]);
-  openAddFromStock(addCarType);
 };
 window.addFromStockDirect=async function(vid,type){
   const v=stock[vid];if(!v)return;
@@ -1139,7 +1021,8 @@ window.importCSV=function(e){
   reader.onload=ev=>{parseCSV(ev.target.result);e.target.value='';};
   reader.readAsText(file,'Shift-JIS');
 };
-function parseCSV(text){
+// CSV共通ヘッダー解析
+function parseCSVHeader(text){
   text=text.replace(/^\uFEFF/,'');
   const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
   let hi=8;
@@ -1156,6 +1039,10 @@ function parseCSV(text){
     shaken:fi('車検期限'),equip:fi('装備品'),price:fi('仕入金額'),total:fi('合計'),
   };
   const g=(row,i)=>i>=0&&i<row.length?row[i].replace(/^"|"$/g,'').trim():'';
+  return {lines,hi,idx,g};
+}
+function parseCSV(text){
+  const {lines,hi,idx,g}=parseCSVHeader(text);
   const existVins=new Set(Object.values(stock).map(v=>v.vin).filter(Boolean));
   const batch={};let added=0,skipped=0;
   for(let i=hi+1;i<lines.length;i++){
@@ -1169,12 +1056,11 @@ function parseCSV(text){
       id,date:fmtDate(g(row,idx.date)),cdate:fmtDate(g(row,idx.cdate)),
       ddate:fmtDate(g(row,idx.ddate)),sdate:fmtDate(g(row,idx.sdate)),
       num:g(row,idx.num),seiri:g(row,idx.seiri),staff:g(row,idx.staff),
-      name:kana2full(g(row,idx.name)),sup:g(row,idx.sup),
+      name:toFullWidth(g(row,idx.name)),sup:g(row,idx.sup),
       color:g(row,idx.color),vin,year:fmtDate(g(row,idx.year)),
       shaken:fmtDate(g(row,idx.shaken)),equip:g(row,idx.equip),
       price:g(row,idx.price),total:g(row,idx.total),
-      regNo:'',loc:'本社',
-      status1:'undelivered',status2:'none',
+      regNo:'',loc:'本社',status1:'undelivered',status2:'none',
       cleaned:false,photographed:false,maintained:false,needsParts:false,
       memo:'',isLoaner:false,addedAt:nowTs()
     };
@@ -1183,6 +1069,48 @@ function parseCSV(text){
   if(!added){alert(`追加: 0台 / スキップ(重複): ${skipped}台`);return;}
   update(ref(db,'stock'),batch).then(()=>alert(`読み込み完了 ✅\n追加: ${added}台 / スキップ(重複): ${skipped}台`))
     .catch(err=>alert('保存エラー: '+err.message));
+}
+function parseCSVUpdate(text){
+  const {lines,hi,idx,g}=parseCSVHeader(text);
+  const csvVins=new Map();
+  for(let i=hi+1;i<lines.length;i++){
+    const row=parseLine(lines[i]);if(!row||row.length<5)continue;
+    const first=g(row,0);
+    if(!first||!/^(平成|令和|昭和|\d{4})/.test(first))continue;
+    const vin=g(row,idx.vin);
+    if(vin) csvVins.set(vin,{
+      date:fmtDate(g(row,idx.date)),cdate:fmtDate(g(row,idx.cdate)),
+      ddate:fmtDate(g(row,idx.ddate)),sdate:fmtDate(g(row,idx.sdate)),
+      num:g(row,idx.num),seiri:g(row,idx.seiri),staff:g(row,idx.staff),
+      name:toFullWidth(g(row,idx.name)),sup:g(row,idx.sup),
+      color:g(row,idx.color),vin,year:fmtDate(g(row,idx.year)),
+      shaken:fmtDate(g(row,idx.shaken)),equip:g(row,idx.equip),
+      price:g(row,idx.price),total:g(row,idx.total),
+    });
+  }
+  if(csvVins.size===0){alert('CSVのデータを読み取れませんでした');return;}
+  const appVehicles=Object.values(stock);
+  const missing=[],updates=[];
+  for(const v of appVehicles){
+    if(v.vin&&csvVins.has(v.vin)) updates.push({appId:v.id,csvData:csvVins.get(v.vin)});
+    else missing.push(v);
+  }
+  csvUpdatePendingData={updates,csvVins};
+  csvUpdateMissingIds=missing.map(v=>v.id);
+  if(missing.length===0){
+    if(!confirm(`CSV照合完了\n上書き更新: ${updates.length}台\n未掲載（納車完了候補）: 0台\n\n上書き更新を実行しますか？`))return;
+    applyCsvUpdateDirect(updates);return;
+  }
+  const el=document.getElementById('csv-update-list');
+  el.innerHTML=missing.map(v=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <input type="checkbox" class="csv-update-chk" data-id="${v.id}" checked style="width:18px;height:18px;accent-color:var(--accent)">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:13px">${v.name||'不明'} ${v.color?toFullWidth(v.color):''}</div>
+        <div style="font-size:11px;color:var(--text3)">${v.vin||''} / ${v.date||''} / <span class="badge ${(S1[v.status1||'undelivered']||S1.undelivered).cls}" style="font-size:10px">${(S1[v.status1||'undelivered']||S1.undelivered).label}</span></div>
+      </div>
+    </div>`).join('');
+  openModal('modal-csv-update');
 }
 function parseLine(line){
   const res=[];let cur='';let inQ=false;
@@ -1193,7 +1121,6 @@ function parseLine(line){
   }
   res.push(cur);return res;
 }
-function kana2full(s){return toFullWidth(s);}// toFullWidthに統一（U+FF9E/FF9F対応済み）
 function fmtDate(s){
   if(!s)return '';
   let m=s.match(/令和\s*(\d+)\s*[\/．年]\s*(\d+)\s*[\/．月]\s*(\d+)/);
@@ -1214,19 +1141,6 @@ window.toggleStockStatFilter=function(f){
 };
 
 window.renderStock=function(){
-  function normalizeQ(s){
-    if(!s)return '';
-    return s
-      // 全角英数→半角
-      .replace(/[Ａ-Ｚａ-ｚ０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0))
-      // 全角スペース→半角
-      .replace(/　/g,' ')
-      // カタカナ→ひらがな（検索時にどちらでもヒット）
-      .replace(/[\u30A1-\u30F6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60))
-      // 半角カナ→全角カナ→ひらがなの順で変換
-      .replace(/[ｦ-ﾟ]+/g,s=>toFullWidth(s).replace(/[\u30A1-\u30F6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60)))
-      .toLowerCase();
-  }
   const el=document.getElementById('stock-list');
   const csvEl=document.getElementById('csv-count');
   const filterEl=document.getElementById('filter-count');
@@ -1546,12 +1460,6 @@ window.openStockDetail=function(id){
   const ins=Object.values(inspections).filter(i=>i.vehicleId===id);
   const s1opts=Object.entries(S1).map(([k,sv])=>`<option value="${k}" ${(v.status1||'undelivered')===k?'selected':''}>${sv.label}</option>`).join('');
   const s2opts=Object.entries(S2).map(([k,sv])=>`<option value="${k}" ${(v.status2||'none')===k?'selected':''}>${sv.label}</option>`).join('');
-  const lbBtns=v.isLoaner
-    ?`<button class="btn btn-sm btn-danger" style="width:100%;margin-top:4px" onclick="removeFromLoaner('${v.id}')">代車/レンタカーから外す</button>`
-    :`<div style="display:flex;gap:6px;margin-top:4px">
-       <button class="btn btn-sm btn-blue" style="flex:1" onclick="addFromStockDirect('${v.id}','loaner')">代車に追加</button>
-       <button class="btn btn-sm btn-cyan" style="flex:1" onclick="addFromStockDirect('${v.id}','rental')">レンタカーに追加</button>
-     </div>`;
   const yearJp=toJapaneseYear(v.year);
   const rows=[
     ['車台番号',v.vin],['色',v.color],['年式',yearJp],['車検期限',v.shaken],
@@ -1560,43 +1468,15 @@ window.openStockDetail=function(id){
     ['合計金額',v.total?'¥'+fmt(v.total):''],
   ].filter(([,val])=>val).map(([k,val])=>`<tr><td>${k}</td><td>${val}</td></tr>`).join('');
 
-  const finishSection=(v.status1||'undelivered')==='sold'?`
-    <p class="lbl">仕上進捗</p>
-    <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;margin-bottom:4px;display:flex;gap:16px;flex-wrap:wrap;border:1px solid var(--border)">
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
-        <input type="checkbox" id="sd-cleaned" ${v.cleaned?'checked':''} style="width:18px;height:18px;accent-color:var(--accent)">清掃完了
-      </label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
-        <input type="checkbox" id="sd-maintained" ${v.maintained?'checked':''} style="width:18px;height:18px;accent-color:var(--accent)">整備完了
-      </label>
-    </div>
-    ${v.cleaned&&v.maintained?'<div style="font-size:11px;color:var(--green);font-weight:700;margin-bottom:4px">✅ 仕上完了</div>':'<div style="font-size:11px;color:var(--orange);margin-bottom:4px">⏳ 仕上未完了</div>'}
-  `:'';
-
   // 出品票（この車両に紐付いたlistings）
   const vListings=Object.values(listings).filter(l=>l.vehicleId===id).sort((a,b)=>(a.addedAt||0)-(b.addedAt||0));
-  const listingSection=`
-    <p class="lbl" style="display:flex;align-items:center;justify-content:space-between">
-      <span>出品票（${vListings.length}件）</span>
-      <button class="btn btn-xs" style="background:#2C2200;border-color:#FFD600;color:#FFD600" onclick="openListingUpload('${id}')">＋ 画像追加</button>
-    </p>
-    ${vListings.length?`<div class="photo-grid" style="margin-bottom:10px">${vListings.map(l=>`<div class="photo-card">
-      <img src="${l.photoUrl}" loading="lazy" onclick="viewListingPhoto('${l.id}')" style="cursor:pointer">
-      <div class="photo-info">
-        <div style="font-size:10px;color:var(--text3);display:flex;justify-content:space-between;align-items:center">
-          <span>${l.date||''}</span>
-          <button class="btn btn-xs btn-danger" onclick="deleteListing('${l.id}')">削除</button>
-        </div>
-      </div>
-    </div>`).join('')}</div>`
-    :'<p style="font-size:11px;color:var(--text3);margin-bottom:10px">出品票がありません</p>'}`;
 
   document.getElementById('sd-body').innerHTML=`
     <p class="lbl">メモ</p>
     <div style="display:flex;gap:6px;margin-bottom:10px">
       <textarea id="sd-memo" rows="2" style="flex:1;margin-bottom:0">${v.memo||''}</textarea>
       <div style="display:flex;flex-direction:column;gap:4px">
-        <button class="mic-btn" onclick="startVoice('sd-memo',this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="9" y1="22" x2="15" y2="22"/></svg></button>
+        <button class="mic-btn" onclick="startVoice('sd-memo',this)"><svg width="18" height="18"><use href="#ic-mic"/></svg></button>
         <button class="btn btn-primary btn-sm" style="align-self:stretch" onclick="saveSD('${id}')">保存</button>
       </div>
     </div>
@@ -1619,19 +1499,22 @@ window.openStockDetail=function(id){
       </div>
     </div>`:''}
     <div style="margin-bottom:10px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <p class="lbl" style="margin:0">出品票（${vListings.length}件）</p>
-        <button class="btn btn-xs" style="background:#2C2200;border-color:#FFD600;color:#FFD600" onclick="openListingUpload('${id}')">＋ 追加</button>
-      </div>
-      ${vListings.length?`<div style="display:flex;flex-direction:column;gap:6px">
+      <p class="lbl" style="margin-bottom:6px">出品票（${vListings.length}件）</p>
+      ${vListings.length?`<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">
         ${vListings.map(l=>`<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:6px;padding:8px 10px">
-          <span style="font-size:12px;font-weight:700;color:var(--text)">${l.date||''}</span>
+          <span style="font-size:12px;font-weight:700">${l.date||''}</span>
           <div style="display:flex;gap:6px">
             <button class="btn btn-xs btn-gray" onclick="viewListingPhoto('${l.id}')">🖼 表示</button>
             <button class="btn btn-xs btn-danger" onclick="deleteListing('${l.id}')">削除</button>
           </div>
         </div>`).join('')}
-      </div>`:'<p style="font-size:11px;color:var(--text3)">出品票がありません</p>'}
+      </div>`:''}
+      <div id="drop-listing-inline" style="border:2px dashed var(--border2);border-radius:var(--radius-sm);padding:12px;text-align:center;cursor:pointer;color:var(--text3);background:var(--surface2)" onclick="document.getElementById('listing-file-input').click()">
+        <div id="listing-preview-inline"><div style="font-size:20px">📷</div><p style="font-size:12px">タップして選択 / PCはドロップ</p></div>
+      </div>
+      <input type="file" id="listing-file-input" accept="image/*" style="display:none" onclick="this.value=null" onchange="previewListingPhotoInline(event)">
+      <div id="listing-progress-inline" style="display:none;font-size:12px;color:var(--green);font-weight:700;text-align:center;margin-top:4px"></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:6px" id="btn-save-listing" onclick="saveListing('${id}')">出品票を保存</button>
     </div>
     <div style="margin-bottom:10px">
       <button class="btn btn-sm btn-gray" style="width:100%" onclick="toggleSection('sd-detail-section',this)">▶ 車両情報</button>
@@ -1668,15 +1551,6 @@ window.saveSD=async function(id){
 let listingUploadDataUrl=null;
 let listingTargetVehicleId=null;
 
-window.openListingUpload=function(vid){
-  listingTargetVehicleId=vid;
-  listingUploadDataUrl=null;
-  document.getElementById('listing-preview').innerHTML='<div style="font-size:24px">📷</div><p style="font-size:13px">タップして写真を選択</p>';
-  const prog=document.getElementById('listing-progress');prog.style.display='none';prog.textContent='';
-  document.getElementById('btn-save-listing').disabled=false;
-  closeModal('modal-stock-detail');
-  openModal('modal-listing-upload');
-};
 // セクション表示トグル
 window.toggleSection=function(id,btn){
   const el=document.getElementById(id);if(!el)return;
@@ -1709,10 +1583,10 @@ window.previewPhoto=function(e){
     document.getElementById('up-preview').innerHTML=`<img src="${url}" style="max-height:130px;border-radius:6px;object-fit:contain">`;
   });
 };
-window.previewListingPhoto=function(e){
+window.previewListingPhotoInline=function(e){
   processImageFile(e.target.files[0],url=>{
     listingUploadDataUrl=url;
-    document.getElementById('listing-preview').innerHTML=`<img src="${url}" style="max-height:160px;border-radius:6px;object-fit:contain">`;
+    document.getElementById('listing-preview-inline').innerHTML=`<img src="${url}" style="max-height:120px;border-radius:6px;object-fit:contain">`;
   });
 };
 // ===== ドラッグ&ドロップ =====
@@ -1725,32 +1599,29 @@ function setupDropZone(zoneId,onFile){
     const file=e.dataTransfer.files[0];if(file)onFile(file);
   });
 }
-setupDropZone('drop-insp',file=>{
-  processImageFile(file,url=>{
-    uploadDataUrl=url;
-    document.getElementById('up-preview').innerHTML=`<img src="${url}" style="max-height:130px;border-radius:6px;object-fit:contain">`;
-  });
-});
-setupDropZone('drop-listing',file=>{
+setupDropZone('drop-listing-inline',file=>{
   processImageFile(file,url=>{
     listingUploadDataUrl=url;
-    document.getElementById('listing-preview').innerHTML=`<img src="${url}" style="max-height:160px;border-radius:6px;object-fit:contain">`;
+    document.getElementById('listing-preview-inline').innerHTML=`<img src="${url}" style="max-height:120px;border-radius:6px;object-fit:contain">`;
   });
 });
-window.saveListing=async function(){
+window.saveListing=async function(vid){
   if(!listingUploadDataUrl){alert('写真を選択してください');return;}
   const btn=document.getElementById('btn-save-listing');
-  const prog=document.getElementById('listing-progress');
-  btn.disabled=true;prog.style.display='block';prog.textContent='📤 保存中...';
+  const prog=document.getElementById('listing-progress-inline');
+  btn.disabled=true;if(prog){prog.style.display='block';prog.textContent='📤 保存中...';}
   try{
     const id=uid();
-    await set(ref(db,`listings/${id}`),{id,vehicleId:listingTargetVehicleId,date:today(),addedAt:nowTs()});
+    const targetVid=vid||listingTargetVehicleId;
+    await set(ref(db,`listings/${id}`),{id,vehicleId:targetVid,date:today(),addedAt:nowTs()});
     await set(ref(db,`listingPhotos/${id}`),{photoUrl:listingUploadDataUrl});
-    await fetchAll();
-    prog.textContent='✅ 保存しました';
+    listings[id]={id,vehicleId:targetVid,date:today(),addedAt:nowTs()};
     listingUploadDataUrl=null;
-    setTimeout(()=>{closeModal('modal-listing-upload');if(listingTargetVehicleId)openStockDetail(listingTargetVehicleId);},600);
-  }catch(err){prog.textContent='❌ エラー: '+err.message;btn.disabled=false;}
+    if(prog){prog.textContent='✅ 保存しました';}
+    btn.disabled=false;
+    // リセットしてモーダルを再描画
+    setTimeout(()=>{if(targetVid)openStockDetail(targetVid);},500);
+  }catch(err){if(prog)prog.textContent='❌ エラー: '+err.message;btn.disabled=false;}
 };
 window.deleteListing=async function(id){
   if(!confirm('この出品票を削除しますか？'))return;
@@ -1758,25 +1629,6 @@ window.deleteListing=async function(id){
   await dbDel(`listings/${id}`);
   await dbDel(`listingPhotos/${id}`);
   if(l?.vehicleId)openStockDetail(l.vehicleId);
-};
-window.viewListingPhoto=async function(id){
-  const l=listings[id];if(!l)return;
-  // 画像データを別パスから個別取得
-  setSyncSt('● 読込中...','saving');
-  try{
-    const snap=await get(ref(db,`listingPhotos/${id}`));
-    const photoUrl=snap.val()?.photoUrl||l.photoUrl||null;
-    if(!photoUrl){alert('画像データが見つかりません');return;}
-    document.getElementById('full-img-el').src=photoUrl;
-    document.getElementById('full-img-name').textContent='出品票';
-    document.getElementById('full-img-meta').textContent=l.date||'';
-    document.getElementById('full-btns').innerHTML=`
-      <button class="btn btn-danger" style="min-width:72px;padding:10px 12px;flex-direction:column;gap:2px" onclick="deleteListing('${id}');closeFullImg()">
-        🗑️<span style="font-size:10px">削除</span>
-      </button>`;
-    document.getElementById('full-img').classList.add('open');
-  }catch(err){alert('画像の読込に失敗しました');}
-  setSyncSt('● 同期中','ok');
 };
 let csvUpdatePendingData={}; // {id: vehicleData} 今回のCSVデータ
 let csvUpdateMissingIds=[]; // アプリにあってCSVにないID
@@ -1788,79 +1640,6 @@ window.importCSVUpdate=function(e){
   reader.readAsText(file,'Shift-JIS');
 };
 
-function parseCSVUpdate(text){
-  text=text.replace(/^\uFEFF/,'');
-  const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
-  let hi=8;
-  for(let i=0;i<Math.min(15,lines.length);i++){
-    if(lines[i].includes('車名')&&lines[i].includes('車台番号')){hi=i;break;}
-  }
-  const hdrs=parseLine(lines[hi]).map(h=>h.replace(/"/g,'').trim());
-  const fi=(...c)=>{for(const x of c){const i=hdrs.indexOf(x);if(i>=0)return i;}return -1;};
-  const idx={
-    date:fi('仕入日'),cdate:fi('契約日'),ddate:fi('納車日'),sdate:fi('売上日'),
-    num:fi('車両仕入番号'),seiri:fi('車両整理番号','整理番号'),
-    staff:fi('仕入担当名'),name:fi('車名'),sup:fi('仕入先名'),
-    color:fi('色'),vin:fi('車台番号'),year:fi('年式'),
-    shaken:fi('車検期限'),equip:fi('装備品'),price:fi('仕入金額'),total:fi('合計'),
-  };
-  const g=(row,i)=>i>=0&&i<row.length?row[i].replace(/^"|"$/g,'').trim():'';
-
-  // CSVデータを車台番号でマップ化
-  const csvVins=new Map(); // vin→csvRowData
-  for(let i=hi+1;i<lines.length;i++){
-    const row=parseLine(lines[i]);if(!row||row.length<5)continue;
-    const first=g(row,0);
-    if(!first||!/^(平成|令和|昭和|\d{4})/.test(first))continue;
-    const vin=g(row,idx.vin);
-    if(vin) csvVins.set(vin,{
-      date:fmtDate(g(row,idx.date)),cdate:fmtDate(g(row,idx.cdate)),
-      ddate:fmtDate(g(row,idx.ddate)),sdate:fmtDate(g(row,idx.sdate)),
-      num:g(row,idx.num),seiri:g(row,idx.seiri),staff:g(row,idx.staff),
-      name:kana2full(g(row,idx.name)),sup:g(row,idx.sup),
-      color:g(row,idx.color),vin,year:fmtDate(g(row,idx.year)),
-      shaken:fmtDate(g(row,idx.shaken)),equip:g(row,idx.equip),
-      price:g(row,idx.price),total:g(row,idx.total),
-    });
-  }
-
-  if(csvVins.size===0){alert('CSVのデータを読み取れませんでした');return;}
-
-  // アプリ内の車両と照合
-  const appVehicles=Object.values(stock);
-  const missing=[]; // アプリにあってCSVにない車両
-  const updates=[]; // 重複（車台番号一致）→情報上書き用
-
-  for(const v of appVehicles){
-    if(v.vin&&csvVins.has(v.vin)){
-      updates.push({appId:v.id,csvData:csvVins.get(v.vin)});
-    } else {
-      missing.push(v);
-    }
-  }
-
-  csvUpdatePendingData={updates,csvVins};
-  csvUpdateMissingIds=missing.map(v=>v.id);
-
-  if(missing.length===0){
-    // 未掲載なし→上書きのみ確認
-    if(!confirm(`CSV照合完了\n上書き更新: ${updates.length}台\n未掲載（納車完了候補）: 0台\n\n上書き更新を実行しますか？`))return;
-    applyCsvUpdateDirect(updates);
-    return;
-  }
-
-  // 確認モーダルを表示
-  const el=document.getElementById('csv-update-list');
-  el.innerHTML=missing.map(v=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
-      <input type="checkbox" class="csv-update-chk" data-id="${v.id}" checked style="width:18px;height:18px;accent-color:var(--accent)">
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:13px;color:var(--text)">${v.name||'不明'} ${v.color?toFullWidth(v.color):''}</div>
-        <div style="font-size:11px;color:var(--text3)">${v.vin||''} / ${v.date||''} / <span class="badge ${(S1[v.status1||'undelivered']||S1.undelivered).cls}" style="font-size:10px">${(S1[v.status1||'undelivered']||S1.undelivered).label}</span></div>
-      </div>
-    </div>`).join('');
-  openModal('modal-csv-update');
-}
 
 window.csvUpdateCheckAll=function(checked){
   document.querySelectorAll('.csv-update-chk').forEach(cb=>cb.checked=checked);
@@ -1943,15 +1722,6 @@ window.selectVehicleFromQuick=function(vid){
 window.searchVehicles=function(q){
   const res=document.getElementById('vehicle-search-results');
   if(!q){res.style.display='none';return;}
-  function normalizeQ(s){
-    if(!s)return '';
-    return s
-      .replace(/[Ａ-Ｚａ-ｚ０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0))
-      .replace(/　/g,' ')
-      .replace(/[\u30A1-\u30F6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60))
-      .replace(/[ｦ-ﾟ]+/g,s=>toFullWidth(s).replace(/[\u30A1-\u30F6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60)))
-      .toLowerCase();
-  }
   const nq=normalizeQ(q);
   const matches=Object.values(stock)
     .filter(v=>[v.name,v.vin,v.color,v.sup].some(f=>normalizeQ(f||'').includes(nq)))
@@ -2072,15 +1842,6 @@ window.toggleInspPartsFilter=function(){
 function renderInspections(){
   const grid=document.getElementById('photo-grid');
   const noP=document.getElementById('no-photos');
-  function normalizeQ(s){
-    if(!s)return '';
-    return s
-      .replace(/[Ａ-Ｚａ-ｚ０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0))
-      .replace(/　/g,' ')
-      .replace(/[\u30A1-\u30F6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60))
-      .replace(/[ｦ-ﾟ]+/g,t=>toFullWidth(t).replace(/[\u30A1-\u30F6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60)))
-      .toLowerCase();
-  }
   const q=normalizeQ(document.getElementById('insp-search')?.value||'');
   let list=Object.values(inspections).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
   if(inspPartsFilter){
@@ -2089,9 +1850,9 @@ function renderInspections(){
   if(q){
     list=list.filter(ins=>{
       const v=ins.vehicleId?stock[ins.vehicleId]:null;
-      return normalizeQ(v?v.name:ins.carName||'').includes(q)
-        ||normalizeQ(ins.memo||'').includes(q)
-        ||normalizeQ(ins.inspMemo||'').includes(q);
+      const name=v?v.name:(ins.carName||'');
+      return [name,v?.vin,v?.color,v?.sup,ins.memo,ins.inspMemo]
+        .some(f=>normalizeQ(f||'').includes(q));
     });
   }
   if(!list.length){grid.innerHTML='';noP.classList.remove('hidden');updateInspBulkBar();return;}
@@ -2134,96 +1895,85 @@ window.toggleInspParts=async function(inspId,e){
   // 点検シート自体のneedsPartsフラグも更新
   await dbUpd(`inspections/${inspId}`,{needsParts:newVal});
 };
-window.viewPhotoById=async function(id){
-  const ins=inspections[id];if(!ins)return;
-  fullImgInspId=id;
-  // 画像データを別パスから個別取得（旧データはins.photoUrlにフォールバック）
+
+// 画像フルスクリーン表示（点検・出品票共通）
+window.openFullImg=async function(type,id){
   setSyncSt('● 読込中...','saving');
   try{
-    const snap=await get(ref(db,`inspectionPhotos/${id}`));
-    const photoUrl=snap.val()?.photoUrl||ins.photoUrl||null;
-    if(!photoUrl){alert('画像データが見つかりません');setSyncSt('● 同期中','ok');return;}
-    document.getElementById('full-img-el').src=photoUrl;
-  }catch(err){alert('画像の読込に失敗しました');setSyncSt('● 同期中','ok');return;}
-  setSyncSt('● 同期中','ok');
-
-  document.getElementById('full-img-name').textContent=ins.carName+(ins.needRepair?' ⚠️要整備':'');
-  document.getElementById('full-img-meta').textContent=ins.date+(ins.memo?' · '+ins.memo:'');
-
-  const vid=ins.vehicleId;
-  const v=vid?stock[vid]:null;
-  const maintDone=v?.maintained;
-  const partsDone=v?.needsParts;
-
-  document.getElementById('full-btns').innerHTML=`
-    <button class="btn btn-danger" style="flex-direction:column;gap:2px;min-width:72px;padding:10px 12px" onclick="fullImgDelete()">
-      🗑️<span style="font-size:10px">削除</span>
-    </button>
-    ${v?`<button class="btn ${maintDone?'btn-orange':'btn-gray'}" style="flex-direction:column;gap:2px;min-width:72px;padding:10px 12px" onclick="fullImgMaintain()">
-      🔧<span style="font-size:10px">整備${maintDone?'済':'完了'}</span>
-    </button>
-    <button class="btn ${partsDone?'btn-primary':'btn-gray'}" style="flex-direction:column;gap:2px;min-width:72px;padding:10px 12px;${partsDone?'animation:pulse 1.5s infinite':''}" onclick="fullImgParts()">
-      🔩<span style="font-size:10px">部品${partsDone?'あり':'注文'}</span>
-    </button>`:''}`;
-
-  // メモ入力欄
-  const memoArea=document.getElementById('full-img-memo-area');
-  if(memoArea){
-    memoArea.innerHTML=`
-      <div style="display:flex;gap:6px;padding:8px 12px;background:var(--surface2);border-top:1px solid var(--border)">
+    let photoUrl,name,meta,btnsHtml,memoHtml='';
+    if(type==='insp'){
+      const ins=inspections[id];if(!ins)return;
+      fullImgInspId=id;
+      const snap=await get(ref(db,`inspectionPhotos/${id}`));
+      photoUrl=snap.val()?.photoUrl||ins.photoUrl||null;
+      name=ins.carName+(ins.needRepair?' ⚠️要整備':'');
+      meta=ins.date+(ins.memo?' · '+ins.memo:'');
+      const v=ins.vehicleId?stock[ins.vehicleId]:null;
+      const maintDone=v?.maintained,partsDone=v?.needsParts;
+      btnsHtml=`<button class="btn btn-danger" style="flex-direction:column;gap:2px;min-width:72px;padding:10px 12px" onclick="fullImgDelete()">🗑️<span style="font-size:10px">削除</span></button>
+        ${v?`<button class="btn ${maintDone?'btn-orange':'btn-gray'}" style="flex-direction:column;gap:2px;min-width:72px;padding:10px 12px" onclick="fullImgMaintain()">🔧<span style="font-size:10px">整備${maintDone?'済':'完了'}</span></button>
+        <button class="btn ${partsDone?'btn-primary':'btn-gray'}" style="flex-direction:column;gap:2px;min-width:72px;padding:10px 12px${partsDone?';animation:pulse 1.5s infinite':''}" onclick="fullImgParts()">🔩<span style="font-size:10px">部品${partsDone?'あり':'注文'}</span></button>`:''}`;
+      memoHtml=`<div style="display:flex;gap:6px;padding:8px 12px;background:var(--surface2);border-top:1px solid var(--border)">
         <textarea id="full-img-memo-input" rows="2" placeholder="追加整備メモなど..." style="flex:1;font-size:12px;resize:none">${ins.inspMemo||''}</textarea>
         <div style="display:flex;flex-direction:column;gap:4px">
-          <button class="mic-btn" onclick="startVoice('full-img-memo-input',this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="9" y1="22" x2="15" y2="22"/></svg></button>
+          <button class="mic-btn" onclick="startVoice('full-img-memo-input',this)"><svg width="18" height="18"><use href="#ic-mic"/></svg></button>
           <button class="btn btn-primary btn-sm" onclick="saveInspMemo('${id}')">保存</button>
-        </div>
-      </div>`;
-  }
-
-  document.getElementById('full-img').classList.add('open');
+        </div></div>`;
+    }else{
+      const l=listings[id];if(!l)return;
+      fullImgInspId=null;
+      const snap=await get(ref(db,`listingPhotos/${id}`));
+      photoUrl=snap.val()?.photoUrl||l.photoUrl||null;
+      name='出品票';meta=l.date||'';
+      btnsHtml=`<button class="btn btn-danger" style="min-width:72px;padding:10px 12px;flex-direction:column;gap:2px" onclick="deleteListing('${id}');closeFullImg()">🗑️<span style="font-size:10px">削除</span></button>`;
+    }
+    if(!photoUrl){alert('画像データが見つかりません');setSyncSt('● 同期中','ok');return;}
+    document.getElementById('full-img-el').src=photoUrl;
+    document.getElementById('full-img-name').textContent=name;
+    document.getElementById('full-img-meta').textContent=meta;
+    document.getElementById('full-btns').innerHTML=btnsHtml;
+    document.getElementById('full-img-memo-area').innerHTML=memoHtml;
+    document.getElementById('full-img').classList.add('open');
+  }catch(err){alert('画像の読込に失敗しました');}
+  setSyncSt('● 同期中','ok');
 };
+window.viewPhotoById=id=>openFullImg('insp',id);
+window.viewListingPhoto=id=>openFullImg('listing',id);
 
-// 点検シート一覧モーダル（販売車カードの📋バッジから）
+// 点検シート・出品票一覧モーダル（共通）
 window.openInspListModal=function(vid){
   const v=stock[vid];if(!v)return;
-  const insList=Object.values(inspections).filter(i=>i.vehicleId===vid).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
-  if(!insList.length){alert('点検シートがありません');return;}
-  const el=document.getElementById('modal-action');
-  document.getElementById('act-title').textContent='点検シート一覧';
-  document.getElementById('act-body').innerHTML=`
-    <p style="font-size:12px;color:var(--text2);margin-bottom:8px">${v.name}</p>
+  const list=Object.values(inspections).filter(i=>i.vehicleId===vid).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+  if(!list.length){alert('点検シートがありません');return;}
+  if(list.length===1){viewPhotoById(list[0].id);return;}
+  document.getElementById('ma-title').textContent='点検シート一覧';
+  document.getElementById('ma-body').innerHTML=`<p style="font-size:12px;color:var(--text2);margin-bottom:8px">${v.name}</p>
     <div style="display:flex;flex-direction:column;gap:6px">
-      ${insList.map(i=>`<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:6px;padding:8px 10px">
-        <div>
-          <span style="font-size:12px;font-weight:700;color:var(--text)">${i.date}</span>
-          ${i.memo?`<span style="font-size:11px;color:var(--text3);margin-left:6px">${i.memo}</span>`:''}
-          ${i.inspMemo?`<div style="font-size:10px;color:var(--amber);margin-top:2px">📝 ${i.inspMemo}</div>`:''}
-        </div>
+      ${list.map(i=>`<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:6px;padding:8px 10px">
+        <div><span style="font-size:12px;font-weight:700">${i.date}</span>${i.memo?`<span style="font-size:11px;color:var(--text3);margin-left:6px">${i.memo}</span>`:''}${i.inspMemo?`<div style="font-size:10px;color:var(--amber)">📝 ${i.inspMemo}</div>`:''}</div>
         <button class="btn btn-xs btn-gray" onclick="closeModal('modal-action');viewPhotoById('${i.id}')">🖼 表示</button>
       </div>`).join('')}
     </div>
     <div style="margin-top:12px"><button class="btn" style="width:100%" onclick="closeModal('modal-action')">閉じる</button></div>`;
   openModal('modal-action');
 };
-// AAバッジから出品票画像を表示
 window.openListingFromBadge=async function(vid){
-  const vListings=Object.values(listings).filter(l=>l.vehicleId===vid).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
-  if(!vListings.length){alert('出品票がありません');return;}
-  if(vListings.length===1){viewListingPhoto(vListings[0].id);return;}
-  // 複数ある場合は一覧を表示
+  const list=Object.values(listings).filter(l=>l.vehicleId===vid).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+  if(!list.length){alert('出品票がありません');return;}
+  if(list.length===1){viewListingPhoto(list[0].id);return;}
   const v=stock[vid];
-  const el=document.getElementById('modal-action');
-  document.getElementById('act-title').textContent='出品票一覧';
-  document.getElementById('act-body').innerHTML=`
-    <p style="font-size:12px;color:var(--text2);margin-bottom:8px">${v?.name||''}</p>
+  document.getElementById('ma-title').textContent='出品票一覧';
+  document.getElementById('ma-body').innerHTML=`<p style="font-size:12px;color:var(--text2);margin-bottom:8px">${v?.name||''}</p>
     <div style="display:flex;flex-direction:column;gap:6px">
-      ${vListings.map(l=>`<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:6px;padding:8px 10px">
-        <span style="font-size:12px;font-weight:700;color:var(--text)">${l.date||''}</span>
+      ${list.map(l=>`<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:6px;padding:8px 10px">
+        <span style="font-size:12px;font-weight:700">${l.date||''}</span>
         <button class="btn btn-xs btn-gray" onclick="closeModal('modal-action');viewListingPhoto('${l.id}')">🖼 表示</button>
       </div>`).join('')}
     </div>
     <div style="margin-top:12px"><button class="btn" style="width:100%" onclick="closeModal('modal-action')">閉じる</button></div>`;
   openModal('modal-action');
 };
+
 window.saveInspMemo=async function(id){
   const val=document.getElementById('full-img-memo-input')?.value.trim()||'';
   await dbUpd(`inspections/${id}`,{inspMemo:val});
@@ -2260,7 +2010,6 @@ window.fullImgParts=async function(){
   await dbUpd(`inspections/${fullImgInspId}`,{needsParts:newVal});
   viewPhotoById(fullImgInspId);
 };
-window.closeFullImg=function(){document.getElementById('full-img').classList.remove('open');fullImgInspId=null;};
 
 // ===== 貸出履歴 =====
 window.openHistory=function(){
@@ -2294,37 +2043,23 @@ window.deleteHistory=async function(id){
 window.openEditHistory=function(id){
   const h=loanHistories[id];if(!h)return;
   document.getElementById('edit-history-id').value=id;
-  document.getElementById('edit-history-car').textContent=h.carName;
-  document.getElementById('edit-history-borrower').value=h.borrower||'';
+  document.getElementById('edit-history-car').textContent=h.carName+' 👤'+h.borrower;
   document.getElementById('edit-history-outdate').value=h.outDate||'';
   document.getElementById('edit-history-returndate').value=h.returnDate||'';
   openModal('modal-edit-history');
 };
 window.saveEditHistory=async function(){
   const id=document.getElementById('edit-history-id').value;
-  const borrower=document.getElementById('edit-history-borrower').value.trim();
-  const outRaw=document.getElementById('edit-history-outdate').value.trim();
-  const returnRaw=document.getElementById('edit-history-returndate').value.trim();
-  const outDate=formatDateInput(outRaw);
-  const returnDate=formatDateInput(returnRaw);
-  // 日数再計算（初日算入）
+  const outDate=formatDateInput(document.getElementById('edit-history-outdate').value.trim());
+  const returnDate=formatDateInput(document.getElementById('edit-history-returndate').value.trim());
   let days=loanHistories[id]?.days||1;
-  const oTs=parseDateToTs(outDate);
-  const rTs=parseDateToTs(returnDate);
+  const oTs=parseDateToTs(outDate),rTs=parseDateToTs(returnDate);
   if(oTs&&rTs&&rTs>=oTs) days=Math.max(1,Math.floor((rTs-oTs)/86400000)+1);
-  await dbUpd(`loanHistories/${id}`,{borrower,outDate,returnDate,days});
-  closeModal('modal-edit-history');
-  openHistory();
+  await dbUpd(`loanHistories/${id}`,{outDate,returnDate,days});
+  closeModal('modal-edit-history');openHistory();
 };
 
-// ===== デバッグパネル（ヘッダー長押しで表示）=====
-let debugTouchTimer=null;
-window.debugTouchStart=function(){debugTouchTimer=setTimeout(()=>toggleDebugPanel(),1000);};
-window.debugTouchEnd=function(){clearTimeout(debugTouchTimer);};
-window.toggleDebugPanel=function(){
-  const p=document.getElementById('debug-panel');
-  if(p)p.style.display=p.style.display==='none'?'block':'none';
-};
+
 window.forceDeleteCar=async function(id){
   if(!confirm('この車両を強制削除しますか？'))return;
   await dbDel(`cars/${id}`);
