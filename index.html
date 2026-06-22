@@ -223,7 +223,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;" ontouchstart="debugTouchStart()" ontouchend="debugTouchEnd()">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.72</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.73</span></div>
     </div>
     <span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -775,25 +775,28 @@ async function fetchAll(){
     inspections =inspSnap.val()||{};
     loanHistories=histSnap.val()||{};
     listings    =listSnap.val()||{};
+    if(!ready){ready=true;hideLoading();}
     setSyncSt('● 同期中','ok');
     renderLoaner();
     renderStock();
     renderInspections();
   }catch(err){
+    if(!ready){ready=true;hideLoading();}
     setSyncSt('● エラー','error');
   }
 }
 
 function startListeners(){
+  // .info/connected はバッジ表示のみに使用（初期ローディング制御から切り離し）
   onValue(ref(db,'.info/connected'),snap=>{
     if(snap.val()){
-      if(!ready){ready=true;hideLoading();}
       setSyncSt('● 同期中','ok');
-      fetchAll();
     }else{
       setSyncSt('● 再接続中...','connecting');
     }
   });
+  // 起動時はfetchAllを直接実行（接続状態に依存しない）
+  fetchAll();
   // 30秒ごとにポーリング（画面表示中のみ）
   pollingTimer=setInterval(()=>{
     if(!document.hidden)fetchAll();
