@@ -621,8 +621,7 @@ function startVoice(targetId,btnEl){
   recognition.onresult=e=>{
     const el=document.getElementById(targetId);if(!el)return;
     const text=e.results[0][0].transcript;
-    el.value=(el.tagName==='TEXTAREA'&&el.value)?el.value+'
-'+text:text;
+    el.value=(el.tagName==='TEXTAREA'&&el.value)?el.value+'\n'+text:text;
     el.dispatchEvent(new Event('input',{bubbles:true}));
   };
   recognition.onend=reset;
