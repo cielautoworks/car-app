@@ -605,6 +605,15 @@ function showLoading(msg){document.getElementById('loading-msg').textContent=msg
 function hideLoading(){document.getElementById('loading').style.display='none';}
 
 // 画像閉じる
+window.closeFullImg=function(){document.getElementById('full-img').classList.remove('open');fullImgInspId=null;};
+// full-img 下スワイプで閉じる
+(function(){
+  let sy=0;
+  const el=document.getElementById('full-img');
+  if(!el)return;
+  el.addEventListener('touchstart',e=>{sy=e.touches[0].clientY;},{passive:true});
+  el.addEventListener('touchend',e=>{if(e.changedTouches[0].clientY-sy>80)window.closeFullImg();},{passive:true});
+})();
 const MIC_SVG=`<svg width="18" height="18"><use href="#ic-mic"/></svg>`;
 const PEN_SVG=`<svg width="18" height="18"><use href="#ic-pen"/></svg>`;
 let recognition=null;
