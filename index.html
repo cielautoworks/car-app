@@ -213,7 +213,7 @@
   <div class="header">
     <div oncontextmenu="toggleDebugPanel();return false;">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.74</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.75</span></div>
     </div>
     <button onclick="manualRefresh()" style="background:none;border:none;cursor:pointer;padding:4px 6px;color:var(--text3);font-size:18px" title="更新">🔄</button><span class="sync-badge connecting" id="sync-st">● 接続中</span>
   </div>
@@ -442,11 +442,12 @@
     <p class="modal-title">🔄 棚卸更新の確認</p>
     <p style="font-size:12px;color:var(--text2);margin-bottom:10px">アプリにあってCSVにない車両です。納車完了にする車両をチェックしてください。</p>
     <div style="display:flex;gap:6px;margin-bottom:8px">
-      <button class="btn btn-sm btn-gray" onclick="csvUpdateCheckAll(true)">全選択</button>
-      <button class="btn btn-sm btn-gray" onclick="csvUpdateCheckAll(false)">全解除</button>
+      <button class="btn btn-sm" style="flex:1;border-color:var(--pink);color:var(--pink)" onclick="csvUpdateCheckAll('sold')">全て納車待ち</button>
+      <button class="btn btn-sm" style="flex:1;border-color:var(--green);color:var(--green)" onclick="csvUpdateCheckAll('delivered')">全て納車完了</button>
+      <button class="btn btn-sm btn-gray" style="flex:1" onclick="csvUpdateCheckAll('keep')">全てそのまま</button>
     </div>
     <div id="csv-update-list" style="max-height:40vh;overflow-y:auto;margin-bottom:12px"></div>
-    <p style="font-size:11px;color:var(--text3);margin-bottom:10px">※チェックあり→納車完了に変更　チェックなし→ステータス変更なし</p>
+    <p style="font-size:11px;color:var(--text3);margin-bottom:10px">※「納車完了」はアーカイブへ移動します</p>
     <div style="display:flex;gap:8px">
       <button class="btn" style="flex:1" onclick="closeModal('modal-csv-update')">キャンセル</button>
       <button class="btn btn-primary" style="flex:1" onclick="applyCsvUpdate()">更新実行</button>
@@ -506,7 +507,7 @@ const S2={
   skip:{label:'点検不要',       cls:'b-insp-skip'},
 };
 
-let cars={},stock={},inspections={},loanHistories={},listings={};
+let cars={},stock={},inspections={},loanHistories={},listings={},stockArchive={};
 let uploadDataUrl=null,selectedCarId=null,addCarType='loaner';
 let checkedIds=new Set(),inspCheckedIds=new Set();
 let fullImgInspId=null;
@@ -1079,11 +1080,22 @@ function parseCSVUpdate(text){
   }
   const el=document.getElementById('csv-update-list');
   el.innerHTML=missing.map(v=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
-      <input type="checkbox" class="csv-update-chk" data-id="${v.id}" checked style="width:18px;height:18px;accent-color:var(--accent)">
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:13px">${v.name||'不明'} ${v.color?toFullWidth(v.color):''}</div>
-        <div style="font-size:11px;color:var(--text3)">${v.vin||''} / ${v.date||''} / <span class="badge ${(S1[v.status1||'undelivered']||S1.undelivered).cls}" style="font-size:10px">${(S1[v.status1||'undelivered']||S1.undelivered).label}</span></div>
+    <div style="padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="font-weight:700;font-size:13px">${v.name||'不明'} ${v.color?toFullWidth(v.color):''}</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:6px">${v.vin||''} / ${v.date||''} / <span class="badge ${(S1[v.status1||'undelivered']||S1.undelivered).cls}" style="font-size:10px">${(S1[v.status1||'undelivered']||S1.undelivered).label}</span></div>
+      <div style="display:flex;gap:6px">
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;flex:1;background:var(--surface2);border-radius:4px;padding:4px 6px">
+          <input type="radio" name="csv-miss-${v.id}" value="sold" class="csv-update-action" data-id="${v.id}" style="accent-color:var(--pink)">
+          <span style="color:var(--pink)">納車待ち</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;flex:1;background:var(--surface2);border-radius:4px;padding:4px 6px">
+          <input type="radio" name="csv-miss-${v.id}" value="delivered" class="csv-update-action" data-id="${v.id}" style="accent-color:var(--green)" checked>
+          <span style="color:var(--green)">納車完了</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;flex:1;background:var(--surface2);border-radius:4px;padding:4px 6px">
+          <input type="radio" name="csv-miss-${v.id}" value="keep" class="csv-update-action" data-id="${v.id}">
+          <span>そのまま</span>
+        </label>
       </div>
     </div>`).join('');
   openModal('modal-csv-update');
@@ -1362,6 +1374,11 @@ window.indivChange=async function(id,field,val){
         upd.isLoaner=false;
       }
     }
+    // 納車完了はアーカイブへ移動（stockへのdbUpdは不要）
+    if(val==='delivered'){
+      await archiveVehicle(id);
+      return;
+    }
     await dbUpd(`stock/${id}`,upd);
   }
   if(field==='s2')await dbUpd(`stock/${id}`,{status2:val});
@@ -1399,12 +1416,15 @@ window.applyBulk=async function(){
   if(!confirm(`選択した${checkedIds.size}台を「${lblMap[action]}」にしますか？`))return;
   showLoading(`${checkedIds.size}台を処理中...`);
   const promises=[];
+  const toArchive=[];
   for(const id of checkedIds){
     const v=stock[id];if(!v)continue;
     if(action==='delete'){
       const car=Object.values(cars).find(c=>c.stockId===id);
       if(car)promises.push(dbDel(`cars/${car.id}`));
       promises.push(dbDel(`stock/${id}`));
+    }else if(action==='s1_delivered'){
+      toArchive.push(id);
     }else if(action.startsWith('s1_')){
       const newS1=action.slice(3);
       const upd={status1:newS1};
@@ -1418,7 +1438,8 @@ window.applyBulk=async function(){
       promises.push(dbUpd(`stock/${id}`,{status2:action.slice(3)}));
     }
   }
-  await Promise.all(promises);
+  if(promises.length)await Promise.all(promises);
+  if(toArchive.length)await archiveMultiple(toArchive);
   // チェックボックスを完全リセット（内部状態・DOM両方）
   checkedIds.clear();
   document.getElementById('bulk-action').value='';
@@ -1613,28 +1634,40 @@ window.importCSVUpdate=function(e){
 };
 
 
-window.csvUpdateCheckAll=function(checked){
-  document.querySelectorAll('.csv-update-chk').forEach(cb=>cb.checked=checked);
+window.csvUpdateCheckAll=function(val){
+  // 全車両を指定の値に一括変更
+  document.querySelectorAll('.csv-update-action').forEach(rb=>{
+    if(rb.value===val)rb.checked=true;
+  });
 };
 
 window.applyCsvUpdate=async function(){
   const {updates}=csvUpdatePendingData;
-  // チェックされた未掲載車両を納車完了に
-  const toDeliver=Array.from(document.querySelectorAll('.csv-update-chk:checked')).map(cb=>cb.dataset.id);
+  // ラジオボタンから各車両の操作を収集
+  const toSold=[];
+  const toArchive=[];
+  document.querySelectorAll('.csv-update-action:checked').forEach(rb=>{
+    if(rb.value==='sold')toSold.push(rb.dataset.id);
+    else if(rb.value==='delivered')toArchive.push(rb.dataset.id);
+    // keep は何もしない
+  });
   showLoading('棚卸更新中...');
   const promises=[];
-  // 重複車両：CSVデータで上書き（ステータス等は保持）
+  // 照合車両：CSVデータで上書き（ステータス等は保持）
   for(const {appId,csvData} of updates){
     promises.push(dbUpd(`stock/${appId}`,csvData));
   }
-  // 未掲載チェックあり→納車完了
-  for(const id of toDeliver){
-    promises.push(dbUpd(`stock/${id}`,{status1:'delivered'}));
+  // 納車待ちに変更
+  for(const id of toSold){
+    const v=stock[id];if(!v)continue;
+    promises.push(dbUpd(`stock/${id}`,{status1:'sold',deliveryClean:true,deliveryMaint:true,docDone:true,cleaned:false,photographed:false,maintained:false}));
   }
-  await Promise.all(promises);
+  if(promises.length)await Promise.all(promises);
+  // 納車完了→アーカイブ（パス移動）
+  if(toArchive.length)await archiveMultiple(toArchive);
   closeModal('modal-csv-update');
   hideLoading();
-  alert(`棚卸更新完了\n情報上書き: ${updates.length}台\n納車完了に変更: ${toDeliver.length}台`);
+  alert(`棚卸更新完了\n情報上書き: ${updates.length}台\n納車待ちに変更: ${toSold.length}台\nアーカイブへ移動: ${toArchive.length}台`);
 };
 
 async function applyCsvUpdateDirect(updates){
@@ -1985,7 +2018,109 @@ window.fullImgParts=async function(){
   viewPhotoById(fullImgInspId);
 };
 
-// ===== 貸出履歴 =====
+// ===== アーカイブ（納車完了パス分離）=====
+async function archiveVehicle(id){
+  const v=stock[id];if(!v)return;
+  const archivedAt=nowTs();
+  // 1. stockArchiveに書き込み
+  await set(ref(db,`stockArchive/${id}`),Object.assign({},v,{archivedAt}));
+  // 2. stockから削除
+  await remove(ref(db,`stock/${id}`));
+  // 3. ローカル更新
+  stockArchive[id]=Object.assign({},v,{archivedAt});
+  delete stock[id];
+  setSyncSt('● 同期中','ok');
+  renderStock();
+}
+async function archiveMultiple(ids){
+  // 一括アーカイブ：並列処理
+  const archivedAt=nowTs();
+  const writes={};
+  const dels=[];
+  for(const id of ids){
+    const v=stock[id];if(!v)continue;
+    writes[`stockArchive/${id}`]=Object.assign({},v,{archivedAt});
+    dels.push(remove(ref(db,`stock/${id}`)));
+    stockArchive[id]=Object.assign({},v,{archivedAt});
+    delete stock[id];
+  }
+  // 書き込みと削除を並列実行
+  await Promise.all([update(ref(db),writes),...dels]);
+  setSyncSt('● 同期中','ok');
+  renderStock();
+}
+window.restoreFromArchive=async function(id){
+  const v=stockArchive[id];if(!v)return;
+  if(!confirm(`「${v.name}」を在庫に戻しますか？`))return;
+  const restored=Object.assign({},v);
+  delete restored.archivedAt;
+  // 1. stockに書き込み
+  await set(ref(db,`stock/${id}`),restored);
+  // 2. stockArchiveから削除
+  await remove(ref(db,`stockArchive/${id}`));
+  // 3. ローカル更新
+  stock[id]=restored;
+  delete stockArchive[id];
+  setSyncSt('● 同期中','ok');
+  renderArchiveModal();
+  renderStock();
+};
+async function fetchArchive(){
+  try{
+    const snap=await get(ref(db,'stockArchive'));
+    stockArchive=snap.val()||{};
+  }catch(e){
+    stockArchive={};
+  }
+}
+function renderArchiveModal(){
+  const list=Object.values(stockArchive).sort((a,b)=>(b.archivedAt||0)-(a.archivedAt||0));
+  const el=document.getElementById('ma-body');
+  const ti=document.getElementById('ma-title');
+  if(ti)ti.textContent=`🗄 アーカイブ（納車完了 ${list.length}台）`;
+  if(!list.length){
+    if(el)el.innerHTML='<p style="text-align:center;color:var(--text3);padding:20px 0">アーカイブはありません</p>';
+    return;
+  }
+  const q=normalizeQ(document.getElementById('archive-search')?.value||'');
+  const filtered=q?list.filter(v=>[v.name,v.vin,v.color].some(f=>normalizeQ(f||'').includes(q))):list;
+  if(el)el.innerHTML=`
+    <input type="text" id="archive-search" placeholder="車名・車台番号で検索..." oninput="renderArchiveModal()" style="margin-bottom:8px">
+    ${filtered.length?filtered.map(v=>`
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px">
+      <div style="font-weight:700;font-size:14px">${v.name||'不明'} ${v.color?toFullWidth(v.color):''}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:2px">${v.vin||''}</div>
+      <div style="font-size:11px;color:var(--text3)">仕入：${v.date||'-'} / アーカイブ：${v.archivedAt?new Date(v.archivedAt).toLocaleDateString('ja-JP',{month:'2-digit',day:'2-digit'}):'-'}</div>
+      <button class="btn btn-sm btn-gray" style="margin-top:8px;width:100%" onclick="restoreFromArchive('${v.id}')">↩ 在庫に戻す</button>
+    </div>`).join(''):'<p style="text-align:center;color:var(--text3);padding:10px 0">該当なし</p>'}
+    <button class="btn" style="width:100%;margin-top:4px" onclick="closeModal('modal-action')">閉じる</button>`;
+}
+// ヘッダー長押し3秒でアーカイブボタン表示
+(function(){
+  let timer=null;
+  const hdr=document.querySelector('.header-title');
+  if(!hdr)return;
+  hdr.addEventListener('touchstart',()=>{
+    timer=setTimeout(async()=>{
+      await fetchArchive();
+      renderArchiveModal();
+      openModal('modal-action');
+    },3000);
+  },{passive:true});
+  hdr.addEventListener('touchend',()=>clearTimeout(timer),{passive:true});
+  hdr.addEventListener('touchmove',()=>clearTimeout(timer),{passive:true});
+  // PC用：マウス長押し
+  hdr.addEventListener('mousedown',()=>{
+    timer=setTimeout(async()=>{
+      await fetchArchive();
+      renderArchiveModal();
+      openModal('modal-action');
+    },3000);
+  });
+  hdr.addEventListener('mouseup',()=>clearTimeout(timer));
+  hdr.addEventListener('mouseleave',()=>clearTimeout(timer));
+})();
+
 window.openHistory=async function(){
   await fetchLoanHistories();
   const list=Object.values(loanHistories).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
