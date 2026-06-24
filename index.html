@@ -641,17 +641,15 @@ window.startVoice=startVoice;
 
 async function fetchAll(){
   try{
-    const [carsSnap,stockSnap,inspSnap,histSnap,listSnap]=await Promise.all([
+    const [carsSnap,stockSnap,inspSnap,listSnap]=await Promise.all([
       get(ref(db,'cars')),
       get(ref(db,'stock')),
       get(ref(db,'inspections')),
-      get(ref(db,'loanHistories')),
       get(ref(db,'listings')),
     ]);
     cars        =carsSnap.val()||{};
     stock       =stockSnap.val()||{};
     inspections =inspSnap.val()||{};
-    loanHistories=histSnap.val()||{};
     listings    =listSnap.val()||{};
     if(!ready){ready=true;hideLoading();}
     setSyncSt('● 同期中','ok');
@@ -661,6 +659,14 @@ async function fetchAll(){
   }catch(err){
     if(!ready){ready=true;hideLoading();}
     setSyncSt('● エラー','error');
+  }
+}
+async function fetchLoanHistories(){
+  try{
+    const snap=await get(ref(db,'loanHistories'));
+    loanHistories=snap.val()||{};
+  }catch(err){
+    loanHistories={};
   }
 }
 
@@ -1040,11 +1046,9 @@ function parseCSVHeader(text){
   const hdrs=parseLine(lines[hi]).map(h=>h.replace(/"/g,'').trim());
   const fi=(...c)=>{for(const x of c){const i=hdrs.indexOf(x);if(i>=0)return i;}return -1;};
   const idx={
-    date:fi('仕入日'),cdate:fi('契約日'),ddate:fi('納車日'),sdate:fi('売上日'),
-    num:fi('車両仕入番号'),seiri:fi('車両整理番号','整理番号'),
-    staff:fi('仕入担当名'),name:fi('車名'),sup:fi('仕入先名'),
+    date:fi('仕入日'),name:fi('車名'),sup:fi('仕入先名'),
     color:fi('色'),vin:fi('車台番号'),year:fi('年式'),
-    shaken:fi('車検期限'),equip:fi('装備品'),price:fi('仕入金額'),total:fi('合計'),
+    shaken:fi('車検期限'),price:fi('仕入金額'),total:fi('合計'),
   };
   const g=(row,i)=>i>=0&&i<row.length?row[i].replace(/^"|"$/g,'').trim():'';
   return {lines,hi,idx,g};
@@ -1061,14 +1065,12 @@ function parseCSV(text){
     if(vin&&existVins.has(vin)){skipped++;continue;}
     const id=uid();
     const v={
-      id,date:fmtDate(g(row,idx.date)),cdate:fmtDate(g(row,idx.cdate)),
-      ddate:fmtDate(g(row,idx.ddate)),sdate:fmtDate(g(row,idx.sdate)),
-      num:g(row,idx.num),seiri:g(row,idx.seiri),staff:g(row,idx.staff),
+      id,date:fmtDate(g(row,idx.date)),
       name:toFullWidth(g(row,idx.name)),sup:g(row,idx.sup),
       color:g(row,idx.color),vin,year:fmtDate(g(row,idx.year)),
-      shaken:fmtDate(g(row,idx.shaken)),equip:g(row,idx.equip),
+      shaken:fmtDate(g(row,idx.shaken)),
       price:g(row,idx.price),total:g(row,idx.total),
-      regNo:'',loc:'本社',status1:'undelivered',status2:'none',
+      regNo:'',status1:'undelivered',status2:'none',
       cleaned:false,photographed:false,maintained:false,needsParts:false,
       memo:'',isLoaner:false,addedAt:nowTs()
     };
@@ -1087,12 +1089,10 @@ function parseCSVUpdate(text){
     if(!first||!/^(平成|令和|昭和|\d{4})/.test(first))continue;
     const vin=g(row,idx.vin);
     if(vin) csvVins.set(vin,{
-      date:fmtDate(g(row,idx.date)),cdate:fmtDate(g(row,idx.cdate)),
-      ddate:fmtDate(g(row,idx.ddate)),sdate:fmtDate(g(row,idx.sdate)),
-      num:g(row,idx.num),seiri:g(row,idx.seiri),staff:g(row,idx.staff),
+      date:fmtDate(g(row,idx.date)),
       name:toFullWidth(g(row,idx.name)),sup:g(row,idx.sup),
       color:g(row,idx.color),vin,year:fmtDate(g(row,idx.year)),
-      shaken:fmtDate(g(row,idx.shaken)),equip:g(row,idx.equip),
+      shaken:fmtDate(g(row,idx.shaken)),
       price:g(row,idx.price),total:g(row,idx.total),
     });
   }
@@ -1201,7 +1201,7 @@ window.renderStock=function(){
     return da>db2?-1:1;
   });
 
-  if(q)list=list.filter(v=>[v.name,v.vin,v.color,v.sup,v.year,v.staff,v.regNo]
+  if(q)list=list.filter(v=>[v.name,v.vin,v.color,v.sup,v.year,v.regNo]
     .some(fld=>normalizeQ(String(fld||'')).includes(q)));
 
   if(f==='parts')         list=list.filter(v=>v.needsParts);
@@ -1471,8 +1471,7 @@ window.openStockDetail=function(id){
   const yearJp=toJapaneseYear(v.year);
   const rows=[
     ['車台番号',v.vin],['色',v.color],['年式',yearJp],['車検期限',v.shaken],
-    ['仕入日',v.date],['契約日',v.cdate],['納車日',v.ddate],['売上日',v.sdate],
-    ['仕入先',v.sup],['担当者',v.staff],['仕入金額',v.price?'¥'+fmt(v.price):''],
+    ['仕入日',v.date],['仕入先',v.sup],['仕入金額',v.price?'¥'+fmt(v.price):''],
     ['合計金額',v.total?'¥'+fmt(v.total):''],
   ].filter(([,val])=>val).map(([k,val])=>`<tr><td>${k}</td><td>${val}</td></tr>`).join('');
 
@@ -1527,7 +1526,7 @@ window.openStockDetail=function(id){
     <div style="margin-bottom:10px">
       <button class="btn btn-sm btn-gray" style="width:100%" onclick="toggleSection('sd-detail-section',this)">▶ 車両情報</button>
       <div id="sd-detail-section" style="display:none;margin-top:8px">
-        <table class="dtable">${rows}${v.equip?`<tr><td>装備品</td><td style="font-size:11px">${v.equip}</td></tr>`:''}</table>
+        <table class="dtable">${rows}</table>
         <p class="lbl">色を修正（デバッグ）</p>
         <input type="text" id="sd-color" value="${v.color||''}" placeholder="例：シロ、パールホワイト" style="margin-bottom:2px">
         <p style="font-size:10px;color:var(--text3);margin-bottom:6px">※CSV取込の色が違う場合のみ使用</p>
@@ -1784,8 +1783,11 @@ window.saveInsp=async function(){
       const upd={status2:needsParts?'ng':'ok'};
       if(needsParts)upd.needsParts=true;
       await update(ref(db,`stock/${vid}`),upd);
+      stock[vid]=Object.assign(stock[vid]||{},upd);
     }
-    await fetchAll();
+    inspections[id]={id,vehicleId:vid||null,carName:name,memo,needsParts,date:today(),addedAt:nowTs()};
+    renderInspections();
+    renderStock();
     prog.textContent='✅ 保存しました';uploadDataUrl=null;selectedUpVehicleId=null;
     setTimeout(()=>closeModal('modal-upload'),700);
   }catch(err){prog.textContent='❌ エラー: '+err.message;}
@@ -2020,7 +2022,8 @@ window.fullImgParts=async function(){
 };
 
 // ===== 貸出履歴 =====
-window.openHistory=function(){
+window.openHistory=async function(){
+  await fetchLoanHistories();
   const list=Object.values(loanHistories).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
   const el=document.getElementById('history-list');
   if(!list.length){
