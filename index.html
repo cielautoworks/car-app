@@ -403,10 +403,13 @@
       <label for="up-parts" style="font-size:14px;font-weight:700;color:var(--text);cursor:pointer">🔩 部品注文あり</label>
     </div>
     <p class="lbl">写真</p>
-    <div id="drop-insp" style="display:none" style="border:2px dashed var(--border2);border-radius:var(--radius-sm);padding:16px;text-align:center;cursor:pointer;color:var(--text3);background:var(--surface2)" onclick="document.getElementById('file-input').click()">
-      <div id="up-preview"><div style="font-size:24px">📷</div><p style="font-size:13px">タップして写真を選択</p><p style="font-size:11px;margin-top:2px">PCはここにドロップも可</p></div>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <button class="btn" style="flex:1;background:var(--surface2);border-color:var(--border2)" onclick="document.getElementById('file-input').click()">📁 ライブラリ</button>
+      <button class="btn" style="flex:1;background:var(--surface2);border-color:var(--border2)" onclick="document.getElementById('file-input-camera').click()">📷 カメラ</button>
     </div>
+    <div id="up-preview" style="text-align:center;padding:10px;background:var(--surface2);border:1px dashed var(--border2);border-radius:var(--radius-sm);color:var(--text3);font-size:12px;min-height:48px;display:flex;align-items:center;justify-content:center">写真未選択</div>
     <input type="file" id="file-input" accept="image/*" style="display:none" onchange="previewPhoto(event)" onclick="this.value=null">
+    <input type="file" id="file-input-camera" accept="image/*" capture="environment" style="display:none" onchange="previewPhoto(event)" onclick="this.value=null">
     <div id="up-progress" style="display:none;margin-top:8px;font-size:12px;color:var(--green);font-weight:700;text-align:center"></div>
     <div style="display:flex;gap:8px;margin-top:14px">
       <button class="btn" style="flex:1" onclick="closeModal('modal-upload')">キャンセル</button>
@@ -1698,7 +1701,7 @@ window.openUpload=function(){
   document.getElementById('up-memo').value='';
   document.getElementById('up-parts').checked=false;
   uploadDataUrl=null;
-  document.getElementById('up-preview').innerHTML='<div style="font-size:24px">📷</div><p style="font-size:13px">タップして写真を選択</p>';
+  document.getElementById('up-preview').innerHTML='写真未選択';
   const prog=document.getElementById('up-progress');prog.style.display='none';prog.textContent='';
   // 絞り込みプルダウン：店頭在庫×未点検×仕入日新しい順（表示は車名+色+車台番号）
   const filtered=Object.values(stock)
