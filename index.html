@@ -34,7 +34,8 @@
   }
   body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
   .app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
-  .header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+  .header{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
+  .header-inner{padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
   .header-title{font-size:15px;font-weight:700;color:var(--accent)}
   .header-sub{font-size:10px;color:var(--text3);margin-top:1px}
   .sync-badge{font-size:10px;padding:3px 8px;border-radius:20px;background:var(--green-bg);color:var(--green);font-weight:700}
@@ -198,7 +199,7 @@
   .days-badge{display:inline-block;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:700;background:var(--pink-bg);color:var(--pink);margin-left:3px;border:1px solid var(--pink)}
   .section-header{font-size:11px;font-weight:700;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em}
   /* ===== ヘッダー右側（更新ボタン・同期バッジ）: PC/スマホ共通で常時表示 ===== */
-  .header{flex-wrap:wrap}
+  .header-inner{flex-wrap:wrap}
   .header-right{display:flex;align-items:center;gap:6px;margin-left:auto}
   .pc-header-search{display:none}
   /* ===== PCレイアウト (1000px以上) ===== */
@@ -211,13 +212,16 @@
     .header .tabs{display:flex;position:static;border:none;background:transparent;margin-left:8px;flex-shrink:0}
     .header .tab{padding:6px 14px;flex:none;font-size:13px}
     .tabs-mobile{display:none}
-    .header{flex-wrap:nowrap;gap:0;padding:8px 20px}
+    .header-inner{flex-wrap:nowrap;gap:0;padding:8px 20px;max-width:1400px;margin:0 auto}
     /* PC用検索・フィルター表示 */
     .pc-header-search{display:flex;align-items:center;gap:8px}
     .pc-header-search input,.pc-header-search select{width:auto;margin-bottom:0}
     /* 車両カード: 3列グリッド */
     #stock-list{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
     #stock-list .stock-item{margin-bottom:0;width:100%;box-sizing:border-box}
+    /* 代車/レンタカードも3列グリッド */
+    #loaner-list{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    #loaner-list .loaner-card{margin-bottom:0;width:100%;box-sizing:border-box}
     /* モーダルをセンター表示 */
     .modal-wrap{align-items:center;justify-content:center}
     .modal-box{border-radius:12px;max-width:520px;width:90%;max-height:85vh}
@@ -242,9 +246,10 @@
 </svg>
 <div class="app">
   <div class="header">
+    <div class="header-inner">
     <div style="flex-shrink:0">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.79</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.80</span></div>
     </div>
     <div class="tabs">
       <div class="tab" onclick="switchTab('loaner')">代車/レンタ</div>
@@ -264,6 +269,7 @@
       </div>
       <button onclick="manualRefresh()" id="btn-refresh" style="background:none;border:none;cursor:pointer;padding:4px 6px;color:var(--text3);font-size:18px;flex-shrink:0" title="更新">🔄</button>
       <span class="sync-badge connecting" id="sync-st" style="flex-shrink:0">● 接続中</span>
+    </div>
     </div>
   </div>
   <div class="tabs tabs-mobile">
@@ -722,7 +728,7 @@ function localDelete(p){
   setSyncSt('● 同期済み','ok');
   renderLoaner();renderStock();renderInspections();
 }
-async function manualRefresh(){
+window.manualRefresh=async function manualRefresh(){
   setSyncSt('● 更新中...','connecting');
   const btn=document.getElementById('btn-refresh');
   if(btn)btn.style.animation='spin 0.8s linear infinite';
