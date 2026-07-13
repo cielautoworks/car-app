@@ -197,6 +197,29 @@
   @keyframes spin{to{transform:rotate(360deg)}}
   .days-badge{display:inline-block;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:700;background:var(--pink-bg);color:var(--pink);margin-left:3px;border:1px solid var(--pink)}
   .section-header{font-size:11px;font-weight:700;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em}
+  /* ===== PCレイアウト (1000px以上) ===== */
+  .pc-header-right{display:none}
+  .tabs-mobile{display:flex;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:53px;z-index:49}
+  @media(min-width:1000px){
+    /* ヘッダー内タブ表示・モバイルタブ非表示 */
+    .tabs{display:flex;position:static;border:none;background:transparent;margin-left:8px;flex-shrink:0}
+    .tab{padding:6px 14px;flex:none;font-size:13px}
+    .tabs-mobile{display:none}
+    .header{flex-wrap:nowrap;gap:0;padding:8px 20px}
+    /* PC用検索・フィルター表示 */
+    .pc-header-right{display:flex;align-items:center;gap:8px;margin-left:auto}
+    .pc-header-right input,.pc-header-right select{width:auto;margin-bottom:0}
+    /* 車両カード: 3列グリッド */
+    #stock-list{display:grid!important;grid-template-columns:repeat(3,1fr);gap:8px}
+    .stock-card{margin-bottom:0!important}
+    /* モーダルをセンター表示 */
+    .modal-wrap{align-items:center;justify-content:center}
+    .modal-box{border-radius:12px;max-width:520px;width:90%;max-height:85vh}
+    /* 点検シートグリッド: 3列 */
+    .photo-grid{grid-template-columns:repeat(3,1fr)!important}
+    /* コンテンツ横幅制限 */
+    .content{max-width:1400px;margin:0 auto;width:100%;padding:16px 20px}
+  }
 </style>
 </head>
 <body>
@@ -211,13 +234,29 @@
 </svg>
 <div class="app">
   <div class="header">
-    <div oncontextmenu="toggleDebugPanel();return false;">
+    <div oncontextmenu="toggleDebugPanel();return false;" style="flex-shrink:0">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.75</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.76</span></div>
     </div>
-    <button onclick="manualRefresh()" style="background:none;border:none;cursor:pointer;padding:4px 6px;color:var(--text3);font-size:18px" title="更新">🔄</button><span class="sync-badge connecting" id="sync-st">● 接続中</span>
+    <div class="tabs">
+      <div class="tab" onclick="switchTab('loaner')">代車/レンタ</div>
+      <div class="tab active" onclick="switchTab('stock')">販売車</div>
+      <div class="tab" onclick="switchTab('inspection')">点検シート</div>
+    </div>
+    <div class="pc-header-right">
+      <input type="text" id="stock-search-pc" placeholder="車名・色・型式..." oninput="syncPcSearch(this.value)" style="width:180px;padding:5px 8px;font-size:12px">
+      <select id="stock-filter-pc" onchange="syncPcFilter(this.value)" style="font-size:12px;padding:5px 6px;width:auto">
+        <option value="">全ステータス</option>
+        <option value="undelivered">未着</option>
+        <option value="floor">在庫</option>
+        <option value="listing">出品中</option>
+        <option value="sold">納車待ち</option>
+      </select>
+      <button onclick="manualRefresh()" id="btn-refresh" style="background:none;border:none;cursor:pointer;padding:4px 6px;color:var(--text3);font-size:18px" title="更新">🔄</button>
+      <span class="sync-badge connecting" id="sync-st">● 接続中</span>
+    </div>
   </div>
-  <div class="tabs">
+  <div class="tabs tabs-mobile">
     <div class="tab" onclick="switchTab('loaner')">代車/レンタ</div>
     <div class="tab active" onclick="switchTab('stock')">販売車</div>
     <div class="tab" onclick="switchTab('inspection')">点検シート</div>
@@ -328,7 +367,10 @@
   <div id="tab-inspection" class="content hidden">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
       <span style="font-size:13px;font-weight:700">点検シート</span>
-      <button class="btn btn-sm btn-primary" onclick="openUpload()">＋ アップロード</button>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-gray" id="btn-insp-history" onclick="toggleInspHistory()" style="font-size:11px">📁 履歴</button>
+        <button class="btn btn-sm btn-primary" onclick="openUpload()">＋ アップロード</button>
+      </div>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:8px">
       <input type="text" id="insp-search" placeholder="車名・色・型式・車台番号で検索..." oninput="renderInspections()" style="flex:1">
@@ -467,7 +509,7 @@
       <p id="full-img-meta" style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:1px"></p>
     </div>
   </div>
-  <div class="full-img-container" id="full-img-container">
+  <div class="full-img-container" id="full-img-container" onclick="if(event.target===this||event.target.id==='full-img-container')closeFullImg()">
     <img id="full-img-el" src="">
   </div>
   <div class="full-btns" id="full-btns"></div>
@@ -672,7 +714,7 @@ function localDelete(p){
 }
 async function manualRefresh(){
   setSyncSt('● 更新中...','connecting');
-  const btn=document.querySelector('[onclick="manualRefresh()"]');
+  const btn=document.getElementById('btn-refresh');
   if(btn)btn.style.animation='spin 0.8s linear infinite';
   await fetchAll();
   if(btn){btn.style.animation='';btn.textContent='✅';setTimeout(()=>{btn.textContent='🔄';},10000);}
@@ -686,10 +728,26 @@ async function manualRefresh(){
 
 window.switchTab=function(tab){
   ['loaner','stock','inspection'].forEach(t=>document.getElementById('tab-'+t).classList.toggle('hidden',t!==tab));
-  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['loaner','stock','inspection'][i]===tab));
+  // ヘッダー内タブ（PC）とモバイルタブ両方のアクティブ状態を更新
+  document.querySelectorAll('.tab').forEach(el=>{
+    const t=el.getAttribute('onclick')?.match(/switchTab\('(\w+)'\)/)?.[1];
+    if(t)el.classList.toggle('active',t===tab);
+  });
   if(tab==='stock')renderStock();
   if(tab==='loaner')renderLoaner();
   if(tab==='inspection')renderInspections();
+};
+// PC用検索→スマホ検索欄に同期してrenderStock
+window.syncPcSearch=function(val){
+  const el=document.getElementById('stock-search');
+  if(el)el.value=val;
+  renderStock();
+};
+// PC用フィルター→スマホフィルターに同期
+window.syncPcFilter=function(val){
+  const el=document.getElementById('stock-filter');
+  if(el)el.value=val;
+  renderStock();
 };
 window.openModal =id=>document.getElementById(id).classList.add('open');
 window.closeModal=id=>document.getElementById(id).classList.remove('open');
@@ -1472,8 +1530,13 @@ window.openStockDetail=function(id){
 
   document.getElementById('sd-body').innerHTML=`
     <p class="lbl">メモ</p>
-    <div style="display:flex;gap:6px;margin-bottom:10px">
+    <div style="display:flex;gap:6px;margin-bottom:8px">
       <textarea id="sd-memo" rows="2" style="flex:1;margin-bottom:0">${v.memo||''}</textarea>
+      <button class="btn btn-primary btn-sm" style="align-self:flex-start" onclick="saveSD('${id}')">保存</button>
+    </div>
+    <p class="lbl">色の補足（類似車両の見分け用）</p>
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <input type="text" id="sd-display-note" value="${v.displayNote||''}" placeholder="例：ツートン、マット塗装など" style="flex:1;margin-bottom:0">
       <button class="btn btn-primary btn-sm" style="align-self:flex-start" onclick="saveSD('${id}')">保存</button>
     </div>
     ${ins.length?`
@@ -1519,8 +1582,6 @@ window.openStockDetail=function(id){
         <p class="lbl">色を修正（デバッグ）</p>
         <input type="text" id="sd-color" value="${v.color||''}" placeholder="例：シロ、パールホワイト" style="margin-bottom:2px">
         <p style="font-size:10px;color:var(--text3);margin-bottom:6px">※CSV取込の色が違う場合のみ使用</p>
-        <p class="lbl">色の補足テキスト（一覧に表示）</p>
-        <input type="text" id="sd-display-note" value="${v.displayNote||''}" placeholder="例：ツートン、マット塗装など" style="margin-bottom:4px">
       </div>
     </div>
     <div style="display:flex;gap:8px">
@@ -1841,6 +1902,19 @@ window.unlinkSingleInsp=async function(id){
   await dbUpd(`inspections/${id}`,{vehicleId:null});
 };
 
+window.toggleInspHistory=async function(){
+  inspShowHistory=!inspShowHistory;
+  const btn=document.getElementById('btn-insp-history');
+  if(btn){
+    btn.style.outline=inspShowHistory?'2px solid var(--cyan)':'';
+    btn.style.color=inspShowHistory?'var(--cyan)':'';
+    btn.textContent=inspShowHistory?'📁 履歴中':'📁 履歴';
+  }
+  if(inspShowHistory&&Object.keys(stockArchive).length===0){
+    await fetchArchive();
+  }
+  renderInspections();
+};
 window.toggleInspPartsFilter=function(){
   inspPartsFilter=!inspPartsFilter;
   const btn=document.getElementById('btn-parts-filter');
@@ -1855,14 +1929,24 @@ function renderInspections(){
   const noP=document.getElementById('no-photos');
   const q=normalizeQ(document.getElementById('insp-search')?.value||'');
   let list=Object.values(inspections).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+  // 通常時はstockArchiveの車両に紐づく点検シートを非表示
+  list=list.filter(ins=>{
+    if(!ins.vehicleId)return true; // 車両未紐付けは常時表示
+    if(stock[ins.vehicleId])return true; // stockにある車両は表示
+    if(inspShowHistory&&stockArchive[ins.vehicleId])return true; // 履歴モード時はarchiveも表示
+    return false;
+  });
   if(inspPartsFilter){
-    list=list.filter(ins=>{const v=ins.vehicleId?stock[ins.vehicleId]:null;return v?.needsParts||false;});
+    list=list.filter(ins=>{
+      const v=ins.vehicleId?stock[ins.vehicleId]:null;
+      return v?.needsParts||false;
+    });
   }
   if(q){
     list=list.filter(ins=>{
-      const v=ins.vehicleId?stock[ins.vehicleId]:null;
+      const v=ins.vehicleId?(stock[ins.vehicleId]||stockArchive[ins.vehicleId]):null;
       const name=v?v.name:(ins.carName||'');
-      return [name,v?.vin,v?.color,v?.sup,ins.memo,ins.inspMemo]
+      return [name,v?.vin,v?.color,v?.displayNote,v?.sup,ins.memo,ins.inspMemo]
         .some(f=>normalizeQ(f||'').includes(q));
     });
   }
@@ -1870,15 +1954,21 @@ function renderInspections(){
   noP.classList.add('hidden');
   grid.innerHTML=list.map(ins=>{
     const chk=inspCheckedIds.has(ins.id)?'checked':'';
-    const v=ins.vehicleId?stock[ins.vehicleId]:null;
+    // stock優先、なければarchive（履歴モード時）
+    const v=ins.vehicleId?(stock[ins.vehicleId]||stockArchive[ins.vehicleId]):null;
+    const isArchived=v&&!stock[ins.vehicleId];
     const hasParts=v?.needsParts||false;
-    const partsBtn=ins.vehicleId?`<button class="btn btn-xs ${hasParts?'btn-danger':'btn-gray'}" style="${hasParts?'animation:pulse 1.5s infinite':''}" onclick="toggleInspParts('${ins.id}',event)">${hasParts?'🔩部品注文':'部品注文'}</button>`:'';
-    // 販売車タブと同様の表記：型式6文字 車名 色
+    const partsBtn=ins.vehicleId&&!isArchived
+      ?`<button class="btn btn-xs ${hasParts?'btn-danger':'btn-gray'}" style="${hasParts?'animation:pulse 1.5s infinite':''}" onclick="toggleInspParts('${ins.id}',event)">${hasParts?'🔩部品注文':'部品注文'}</button>`
+      :'';
+    // 型式6文字 車名 toFullWidth(色) displayNote（販売車タブと同じ形式）
     const vinPre=v&&v.vin&&v.vin.includes('-')?v.vin.split('-')[0].slice(0,6)+' ':'';
     const colorStr=v&&v.color?' '+toFullWidth(v.color):'';
-    const displayName=v?(vinPre+v.name+colorStr):ins.carName;
+    const noteStr=v?.displayNote?' '+v.displayNote:'';
+    const displayName=v?(vinPre+v.name+colorStr+noteStr):(ins.carName||'');
     return`<div class="photo-card${chk?' checked':''}" data-id="${ins.id}">
       <input type="checkbox" class="photo-chk" data-id="${ins.id}" ${chk} onchange="toggleInspCheck('${ins.id}',this.checked)">
+      ${isArchived?`<div style="font-size:9px;color:var(--text3);position:absolute;top:4px;right:4px;background:var(--surface2);padding:1px 4px;border-radius:3px">納車済</div>`:''}
       <div class="photo-info" style="padding:8px">
         <div style="font-size:11px;font-weight:700;color:var(--text);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:22px" onclick="viewPhotoById('${ins.id}')">${displayName}</div>
         <div style="font-size:10px;color:var(--text3);margin-top:2px">${ins.date}${ins.needsParts?'<span style="color:var(--red)"> 🔩</span>':''}${ins.memo?'<span style="color:var(--text2)"> · '+ins.memo+'</span>':''}</div>
