@@ -241,7 +241,7 @@
   <div class="header">
     <div style="flex-shrink:0">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.76</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.77</span></div>
     </div>
     <div class="tabs">
       <div class="tab" onclick="switchTab('loaner')">代車/レンタ</div>
@@ -1907,6 +1907,7 @@ window.unlinkSingleInsp=async function(id){
   await dbUpd(`inspections/${id}`,{vehicleId:null});
 };
 
+let inspShowHistory=false;
 window.toggleInspHistory=async function(){
   inspShowHistory=!inspShowHistory;
   const btn=document.getElementById('btn-insp-history');
