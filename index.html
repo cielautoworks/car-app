@@ -201,6 +201,7 @@
   .pc-header-right{display:none}
   .header .tabs{display:none}
   .tabs-mobile{display:flex;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:53px;z-index:49}
+  .mobile-sync-row{display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:4px 10px;background:var(--surface);border-bottom:1px solid var(--border)}
   @media(min-width:1000px){
     /* .appの480px制限を解除（PCで横幅を使うための最重要修正） */
     .app{max-width:none}
@@ -208,6 +209,7 @@
     .header .tabs{display:flex;position:static;border:none;background:transparent;margin-left:8px;flex-shrink:0}
     .header .tab{padding:6px 14px;flex:none;font-size:13px}
     .tabs-mobile{display:none}
+    .mobile-sync-row{display:none}
     .header{flex-wrap:nowrap;gap:0;padding:8px 20px}
     /* PC用検索・フィルター表示 */
     .pc-header-right{display:flex;align-items:center;gap:8px;margin-left:auto}
@@ -241,7 +243,7 @@
   <div class="header">
     <div style="flex-shrink:0">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.77</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.78</span></div>
     </div>
     <div class="tabs">
       <div class="tab" onclick="switchTab('loaner')">代車/レンタ</div>
@@ -265,6 +267,10 @@
     <div class="tab" onclick="switchTab('loaner')">代車/レンタ</div>
     <div class="tab active" onclick="switchTab('stock')">販売車</div>
     <div class="tab" onclick="switchTab('inspection')">点検シート</div>
+  </div>
+  <div class="mobile-sync-row">
+    <button onclick="manualRefresh()" id="btn-refresh-mobile" style="background:none;border:none;cursor:pointer;padding:2px 6px;color:var(--text3);font-size:15px" title="更新">🔄</button>
+    <span class="sync-badge connecting" id="sync-st-mobile">● 接続中</span>
   </div>
 
   <!-- 代車/レンタタブ -->
@@ -630,9 +636,11 @@ function toJapaneseYear(dateStr){
 }
 
 function setSyncSt(t,s='ok'){
+  const cls='sync-badge'+(s==='error'?' error':s==='saving'?' saving':s==='connecting'?' connecting':'');
   const el=document.getElementById('sync-st');
-  el.textContent=t;
-  el.className='sync-badge'+(s==='error'?' error':s==='saving'?' saving':s==='connecting'?' connecting':'');
+  if(el){el.textContent=t;el.className=cls;}
+  const elM=document.getElementById('sync-st-mobile');
+  if(elM){elM.textContent=t;elM.className=cls;}
 }
 function showLoading(msg){document.getElementById('loading-msg').textContent=msg||'処理中...';document.getElementById('loading').style.display='flex';}
 function hideLoading(){document.getElementById('loading').style.display='none';}
@@ -662,7 +670,7 @@ async function fetchAll(){
     inspections =inspSnap.val()||{};
     listings    =listSnap.val()||{};
     if(!ready){ready=true;hideLoading();}
-    setSyncSt('● 同期中','ok');
+    setSyncSt('● 同期済み','ok');
     renderLoaner();
     renderStock();
     renderInspections();
@@ -684,7 +692,7 @@ function startListeners(){
   // .info/connected はバッジ表示のみに使用（初期ローディング制御から切り離し）
   onValue(ref(db,'.info/connected'),snap=>{
     if(snap.val()){
-      setSyncSt('● 同期中','ok');
+      setSyncSt('● 同期済み','ok');
     }else{
       setSyncSt('● 再接続中...','connecting');
     }
@@ -704,7 +712,7 @@ function localUpdate(p,d){
   else if(parts[0]==='inspections'){if(parts[1])inspections[parts[1]]=Object.assign(inspections[parts[1]]||{},d);}
   else if(parts[0]==='listings'){if(parts[1])listings[parts[1]]=Object.assign(listings[parts[1]]||{},d);}
   else if(parts[0]==='loanHistories'){if(parts[1])loanHistories[parts[1]]=Object.assign(loanHistories[parts[1]]||{},d);}
-  setSyncSt('● 同期中','ok');
+  setSyncSt('● 同期済み','ok');
   renderLoaner();renderStock();renderInspections();
 }
 function localDelete(p){
@@ -714,21 +722,25 @@ function localDelete(p){
   else if(parts[0]==='inspections'&&parts[1])delete inspections[parts[1]];
   else if(parts[0]==='listings'&&parts[1])delete listings[parts[1]];
   else if(parts[0]==='loanHistories'&&parts[1])delete loanHistories[parts[1]];
-  setSyncSt('● 同期中','ok');
+  setSyncSt('● 同期済み','ok');
   renderLoaner();renderStock();renderInspections();
 }
 async function manualRefresh(){
   setSyncSt('● 更新中...','connecting');
   const btn=document.getElementById('btn-refresh');
+  const btnM=document.getElementById('btn-refresh-mobile');
   if(btn)btn.style.animation='spin 0.8s linear infinite';
+  if(btnM)btnM.style.animation='spin 0.8s linear infinite';
   await fetchAll();
   if(btn){btn.style.animation='';btn.textContent='✅';setTimeout(()=>{btn.textContent='🔄';},10000);}
+  if(btnM){btnM.style.animation='';btnM.textContent='✅';setTimeout(()=>{btnM.textContent='🔄';},10000);}
   // 10秒間バッジを目立たせる
-  const badge=document.getElementById('sync-st');
-  if(badge){
+  const badges=[document.getElementById('sync-st'),document.getElementById('sync-st-mobile')];
+  badges.forEach(badge=>{
+    if(!badge)return;
     badge.textContent='● 更新完了';badge.style.color='var(--green)';badge.style.fontWeight='700';
-    setTimeout(()=>{badge.textContent='● 同期中';badge.style.color='';badge.style.fontWeight='';},10000);
-  }
+    setTimeout(()=>{badge.textContent='● 同期済み';badge.style.color='';badge.style.fontWeight='';},10000);
+  });
 }
 
 window.switchTab=function(tab){
@@ -2033,7 +2045,7 @@ window.openFullImg=async function(type,id){
       name='出品票';meta=l.date||'';
       btnsHtml=`<button class="btn btn-danger" style="min-width:72px;padding:10px 12px;flex-direction:column;gap:2px" onclick="deleteListing('${id}');closeFullImg()">🗑️<span style="font-size:10px">削除</span></button>`;
     }
-    if(!photoUrl){alert('画像データが見つかりません');setSyncSt('● 同期中','ok');return;}
+    if(!photoUrl){alert('画像データが見つかりません');setSyncSt('● 同期済み','ok');return;}
     document.getElementById('full-img-el').src=photoUrl;
     document.getElementById('full-img-name').textContent=name;
     document.getElementById('full-img-meta').textContent=meta;
@@ -2041,7 +2053,7 @@ window.openFullImg=async function(type,id){
     document.getElementById('full-img-memo-area').innerHTML=memoHtml;
     document.getElementById('full-img').classList.add('open');
   }catch(err){alert('画像の読込に失敗しました');}
-  setSyncSt('● 同期中','ok');
+  setSyncSt('● 同期済み','ok');
 };
 window.viewPhotoById=id=>openFullImg('insp',id);
 window.viewListingPhoto=id=>openFullImg('listing',id);
@@ -2128,7 +2140,7 @@ async function archiveVehicle(id){
   // 3. ローカル更新
   stockArchive[id]=Object.assign({},v,{archivedAt});
   delete stock[id];
-  setSyncSt('● 同期中','ok');
+  setSyncSt('● 同期済み','ok');
   renderStock();
 }
 async function archiveMultiple(ids){
@@ -2145,7 +2157,7 @@ async function archiveMultiple(ids){
   }
   // 書き込みと削除を並列実行
   await Promise.all([update(ref(db),writes),...dels]);
-  setSyncSt('● 同期中','ok');
+  setSyncSt('● 同期済み','ok');
   renderStock();
 }
 window.restoreFromArchive=async function(id){
@@ -2160,7 +2172,7 @@ window.restoreFromArchive=async function(id){
   // 3. ローカル更新
   stock[id]=restored;
   delete stockArchive[id];
-  setSyncSt('● 同期中','ok');
+  setSyncSt('● 同期済み','ok');
   renderArchiveModal();
   renderStock();
 };
