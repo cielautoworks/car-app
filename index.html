@@ -249,7 +249,7 @@
     <div class="header-inner">
     <div style="flex-shrink:0">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.80</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.81</span></div>
     </div>
     <div class="tabs">
       <div class="tab" onclick="switchTab('loaner')">代車/レンタ</div>
@@ -1945,7 +1945,7 @@ window.toggleInspPartsFilter=function(){
   }
   renderInspections();
 };
-function renderInspections(){
+window.renderInspections=function renderInspections(){
   const grid=document.getElementById('photo-grid');
   const noP=document.getElementById('no-photos');
   const q=normalizeQ(document.getElementById('insp-search')?.value||'');
