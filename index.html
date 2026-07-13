@@ -201,6 +201,8 @@
   .pc-header-right{display:none}
   .tabs-mobile{display:flex;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:53px;z-index:49}
   @media(min-width:1000px){
+    /* .appの480px制限を解除（PCで横幅を使うための最重要修正） */
+    .app{max-width:none}
     /* ヘッダー内タブ表示・モバイルタブ非表示 */
     .tabs{display:flex;position:static;border:none;background:transparent;margin-left:8px;flex-shrink:0}
     .tab{padding:6px 14px;flex:none;font-size:13px}
@@ -210,8 +212,8 @@
     .pc-header-right{display:flex;align-items:center;gap:8px;margin-left:auto}
     .pc-header-right input,.pc-header-right select{width:auto;margin-bottom:0}
     /* 車両カード: 3列グリッド */
-    #stock-list{display:grid!important;grid-template-columns:repeat(3,1fr);gap:8px}
-    .stock-card{margin-bottom:0!important}
+    #stock-list{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    #stock-list .stock-item{margin-bottom:0;width:100%;box-sizing:border-box}
     /* モーダルをセンター表示 */
     .modal-wrap{align-items:center;justify-content:center}
     .modal-box{border-radius:12px;max-width:520px;width:90%;max-height:85vh}
@@ -219,6 +221,8 @@
     .photo-grid{grid-template-columns:repeat(3,1fr)!important}
     /* コンテンツ横幅制限 */
     .content{max-width:1400px;margin:0 auto;width:100%;padding:16px 20px}
+    /* スマホ用検索行を非表示（PC用ヘッダーに移動済み） */
+    #tab-stock .search-row{display:none}
   }
 </style>
 </head>
@@ -234,7 +238,7 @@
 </svg>
 <div class="app">
   <div class="header">
-    <div oncontextmenu="toggleDebugPanel();return false;" style="flex-shrink:0">
+    <div style="flex-shrink:0">
       <div class="header-title">🚗 ciel autoworks</div>
       <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.76</span></div>
     </div>
