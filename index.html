@@ -249,7 +249,7 @@
     <div class="header-inner">
     <div style="flex-shrink:0">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.81</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.82</span></div>
     </div>
     <div class="tabs">
       <div class="tab" onclick="switchTab('loaner')">代車/レンタ</div>
@@ -260,11 +260,30 @@
       <div class="pc-header-search">
         <input type="text" id="stock-search-pc" placeholder="車名・色・型式..." oninput="syncPcSearch(this.value)" style="width:180px;padding:5px 8px;font-size:12px">
         <select id="stock-filter-pc" onchange="syncPcFilter(this.value)" style="font-size:12px;padding:5px 6px;width:auto">
-          <option value="">全ステータス</option>
-          <option value="undelivered">未着</option>
-          <option value="floor">在庫</option>
-          <option value="listing">出品中</option>
-          <option value="sold">納車待ち</option>
+          <option value="">すべて</option>
+          <optgroup label="▼絞り込み">
+            <option value="parts">部品待ち</option>
+            <option value="no_photo">撮影未完了</option>
+            <option value="no_clean">清掃未完了</option>
+            <option value="no_maint">整備未完了</option>
+            <option value="no_insp">画像未登録</option>
+            <option value="car_inspection_ok">車検準備OK</option>
+          </optgroup>
+          <optgroup label="▼ステータス①">
+            <option value="s1_undelivered">未着</option>
+            <option value="s1_floor">店頭在庫</option>
+            <option value="s1_loaner">代車</option>
+            <option value="s1_rental">レンタカー</option>
+            <option value="s1_listing">出品</option>
+            <option value="s1_sold">納車待ち</option>
+            <option value="s1_delivered">納車完了</option>
+          </optgroup>
+          <optgroup label="▼ステータス②">
+            <option value="s2_none">未点検</option>
+            <option value="s2_ng">要整備</option>
+            <option value="s2_ok">点検済</option>
+            <option value="s2_skip">点検不要</option>
+          </optgroup>
         </select>
       </div>
       <button onclick="manualRefresh()" id="btn-refresh" style="background:none;border:none;cursor:pointer;padding:4px 6px;color:var(--text3);font-size:18px;flex-shrink:0" title="更新">🔄</button>
