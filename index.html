@@ -201,10 +201,10 @@
   /* ===== ヘッダー右側（更新ボタン・同期バッジ）: PC/スマホ共通で常時表示 ===== */
   .header-inner{flex-wrap:wrap}
   .header-right{display:flex;align-items:center;gap:6px;margin-left:auto}
-  .pc-header-search{display:none}
   /* ===== PCレイアウト (1000px以上) ===== */
   .header .tabs{display:none}
   .tabs-mobile{display:flex;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:53px;z-index:49}
+  .stock-toolbar-row{display:flex;flex-direction:column}
   @media(min-width:1000px){
     /* .appの480px制限を解除（PCで横幅を使うための最重要修正） */
     .app{max-width:none}
@@ -213,9 +213,12 @@
     .header .tab{padding:6px 14px;flex:none;font-size:13px}
     .tabs-mobile{display:none}
     .header-inner{flex-wrap:nowrap;gap:0;padding:8px 20px;max-width:1400px;margin:0 auto}
-    /* PC用検索・フィルター表示 */
-    .pc-header-search{display:flex;align-items:center;gap:8px}
-    .pc-header-search input,.pc-header-search select{width:auto;margin-bottom:0}
+    /* 一括操作・検索・絞込を1行に */
+    .stock-toolbar-row{flex-direction:row;align-items:center;gap:8px}
+    .stock-toolbar-row .bulk-bar{margin-bottom:0;flex-shrink:0;flex-wrap:nowrap}
+    .stock-toolbar-row .search-row{margin-bottom:0;flex:1;min-width:0}
+    .stock-toolbar-row .search-row input{min-width:0}
+    .stock-toolbar-row .bulk-bar select{width:auto;max-width:180px}
     /* 車両カード: 3列グリッド */
     #stock-list{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
     #stock-list .stock-item{margin-bottom:0;width:100%;box-sizing:border-box}
@@ -229,8 +232,6 @@
     .photo-grid{grid-template-columns:repeat(3,1fr)!important}
     /* コンテンツ横幅制限 */
     .content{max-width:1400px;margin:0 auto;width:100%;padding:16px 20px}
-    /* スマホ用検索行を非表示（PC用ヘッダーに移動済み） */
-    #tab-stock .search-row{display:none}
   }
 </style>
 </head>
@@ -249,7 +250,7 @@
     <div class="header-inner">
     <div style="flex-shrink:0">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.82</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.83</span></div>
     </div>
     <div class="tabs">
       <div class="tab" onclick="switchTab('loaner')">代車/レンタ</div>
@@ -257,35 +258,6 @@
       <div class="tab" onclick="switchTab('inspection')">点検シート</div>
     </div>
     <div class="header-right">
-      <div class="pc-header-search">
-        <input type="text" id="stock-search-pc" placeholder="車名・色・型式..." oninput="syncPcSearch(this.value)" style="width:180px;padding:5px 8px;font-size:12px">
-        <select id="stock-filter-pc" onchange="syncPcFilter(this.value)" style="font-size:12px;padding:5px 6px;width:auto">
-          <option value="">すべて</option>
-          <optgroup label="▼絞り込み">
-            <option value="parts">部品待ち</option>
-            <option value="no_photo">撮影未完了</option>
-            <option value="no_clean">清掃未完了</option>
-            <option value="no_maint">整備未完了</option>
-            <option value="no_insp">画像未登録</option>
-            <option value="car_inspection_ok">車検準備OK</option>
-          </optgroup>
-          <optgroup label="▼ステータス①">
-            <option value="s1_undelivered">未着</option>
-            <option value="s1_floor">店頭在庫</option>
-            <option value="s1_loaner">代車</option>
-            <option value="s1_rental">レンタカー</option>
-            <option value="s1_listing">出品</option>
-            <option value="s1_sold">納車待ち</option>
-            <option value="s1_delivered">納車完了</option>
-          </optgroup>
-          <optgroup label="▼ステータス②">
-            <option value="s2_none">未点検</option>
-            <option value="s2_ng">要整備</option>
-            <option value="s2_ok">点検済</option>
-            <option value="s2_skip">点検不要</option>
-          </optgroup>
-        </select>
-      </div>
       <button onclick="manualRefresh()" id="btn-refresh" style="background:none;border:none;cursor:pointer;padding:4px 6px;color:var(--text3);font-size:18px;flex-shrink:0" title="更新">🔄</button>
       <span class="sync-badge connecting" id="sync-st" style="flex-shrink:0">● 接続中</span>
     </div>
@@ -339,6 +311,7 @@
     </div>
     <!-- 統計5項目 -->
     <div class="stats5" id="stock-stats"></div>
+    <div class="stock-toolbar-row">
     <!-- 一括操作 -->
     <div class="bulk-bar">
       <input type="checkbox" id="chk-all" onchange="toggleAll(this.checked)" title="全選択">
@@ -394,6 +367,7 @@
           <option value="s2_skip">点検不要</option>
         </optgroup>
       </select>
+    </div>
     </div>
     <div id="stock-list"></div>
   </div>
@@ -775,18 +749,6 @@ window.switchTab=function(tab){
   if(tab==='stock')renderStock();
   if(tab==='loaner')renderLoaner();
   if(tab==='inspection')renderInspections();
-};
-// PC用検索→スマホ検索欄に同期してrenderStock
-window.syncPcSearch=function(val){
-  const el=document.getElementById('stock-search');
-  if(el)el.value=val;
-  renderStock();
-};
-// PC用フィルター→スマホフィルターに同期
-window.syncPcFilter=function(val){
-  const el=document.getElementById('stock-filter');
-  if(el)el.value=val;
-  renderStock();
 };
 window.openModal =id=>document.getElementById(id).classList.add('open');
 window.closeModal=id=>document.getElementById(id).classList.remove('open');
