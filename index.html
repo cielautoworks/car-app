@@ -154,9 +154,13 @@
   /* 点検シート */
   .photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
   .news-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px}
+  .news-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
   .news-meta{font-size:11px;color:var(--text3);font-weight:700;margin-bottom:3px}
   .news-msg{font-size:13px;color:var(--text)}
+  .news-del-btn{background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:2px 4px;flex-shrink:0;line-height:1}
+  .news-del-btn:hover{color:var(--red)}
   .photo-card{background:var(--surface2);border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border);position:relative}
+  .parts-memo-input{flex:1;min-width:64px;font-size:11px;padding:5px 8px;margin:0;border-radius:6px}
   .photo-card.checked{border-color:var(--red);border-width:2px}
   .photo-card img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;cursor:pointer}
   .photo-info{padding:5px 7px}
@@ -263,7 +267,7 @@
     <div class="header-inner">
     <div style="flex-shrink:0">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.84</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.85</span></div>
     </div>
     <div class="tabs">
       <div class="tab" onclick="switchTab('loaner')">代車/レンタ</div>
@@ -760,6 +764,7 @@ function localDelete(p){
   else if(parts[0]==='inspections'&&parts[1])delete inspections[parts[1]];
   else if(parts[0]==='listings'&&parts[1])delete listings[parts[1]];
   else if(parts[0]==='loanHistories'&&parts[1])delete loanHistories[parts[1]];
+  else if(parts[0]==='newsLog'&&parts[1])delete newsLog[parts[1]];
   setSyncSt('● 同期済み','ok');
   renderLoaner();renderStock();renderInspections();
 }
@@ -800,7 +805,7 @@ function pruneOldNews(){
   staleIds.forEach(id=>{ remove(ref(db,`newsLog/${id}`)); delete newsLog[id]; });
 }
 function renderNews(){
-  const list=Object.values(newsLog).sort((a,b)=>(b.ts||0)-(a.ts||0));
+  const list=Object.entries(newsLog).map(([id,n])=>({id,...n})).sort((a,b)=>(b.ts||0)-(a.ts||0));
   const el=document.getElementById('news-list');
   const noEl=document.getElementById('no-news');
   if(!list.length){ el.innerHTML=''; noEl.style.display='block'; return; }
@@ -809,11 +814,19 @@ function renderNews(){
     const d=new Date(n.ts||0);
     const dateStr=`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     return `<div class="news-item">
-      <div class="news-meta">${dateStr}${n.vin?' '+n.vin:''}</div>
+      <div class="news-row">
+        <div class="news-meta">${dateStr}${n.vin?' '+n.vin:''}</div>
+        <button class="news-del-btn" onclick="deleteNewsItem('${n.id}')" title="このNewsを削除">✕</button>
+      </div>
       <div class="news-msg">${(n.message||'').replace(/</g,'&lt;')}</div>
     </div>`;
   }).join('');
 }
+window.deleteNewsItem=async function(id){
+  if(!confirm('このNewsを削除しますか？'))return;
+  await dbDel(`newsLog/${id}`);
+  renderNews();
+};
 
 window.switchTab=function(tab){
   ['loaner','stock','inspection','news'].forEach(t=>document.getElementById('tab-'+t).classList.toggle('hidden',t!==tab));
@@ -2119,9 +2132,10 @@ window.renderInspections=function renderInspections(){
         <div style="font-size:11px;font-weight:700;color:var(--text);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:22px" onclick="viewPhotoById('${ins.id}')">${displayName}</div>
         <div style="font-size:10px;color:var(--text3);margin-top:2px">${ins.date}${ins.needsParts?'<span style="color:var(--red)"> 🔩</span>':''}${ins.memo?'<span style="color:var(--text2)"> · '+ins.memo+'</span>':''}</div>
         ${ins.inspMemo?`<div style="font-size:10px;color:var(--amber);margin-top:2px">📝 ${ins.inspMemo}</div>`:''}
-        <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">
+        <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;align-items:center">
           <button class="btn btn-xs btn-gray" onclick="viewPhotoById('${ins.id}')">🖼 画像</button>
           ${partsBtn}
+          ${ins.vehicleId&&!isArchived?`<input type="text" class="parts-memo-input" id="partsMemo-${ins.id}" placeholder="メモ(部品注文時に保存)" onclick="event.stopPropagation()">`:''}
         </div>
       </div>
     </div>`;
@@ -2136,11 +2150,27 @@ window.toggleInspParts=async function(inspId,e){
   const v=stock[ins.vehicleId];if(!v)return;
   const newVal=!v.needsParts;
   const upd={needsParts:newVal};
-  // 部品注文ONなら点検済→要整備に（登録時と同じ挙動）
-  if(newVal) upd.status2='ng';
+  const inspUpd={needsParts:newVal};
+  if(newVal){
+    // 部品注文ONなら点検済→要整備に（登録時と同じ挙動）
+    upd.status2='ng';
+    // 右のメモ入力欄に文字があれば「mm/dd メモ」の形でinspMemoに保存
+    const memoInput=document.getElementById(`partsMemo-${inspId}`);
+    const memoText=(memoInput?.value||'').trim();
+    if(memoText){
+      const d=new Date();
+      const mmdd=`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+      inspUpd.inspMemo=`${mmdd} ${memoText}`;
+    }
+  }
   await dbUpd(`stock/${ins.vehicleId}`,upd);
   // 点検シート自体のneedsPartsフラグも更新
-  await dbUpd(`inspections/${inspId}`,{needsParts:newVal});
+  await dbUpd(`inspections/${inspId}`,inspUpd);
+  // News：部品注文は点滅が消えた(OFFになった)時=部品が揃って完了したタイミングだけ記録
+  if(!newVal){
+    const colorStr=v.color?toFullWidth(v.color):'';
+    logNews(v.vin, `${v.name}${colorStr}の部品注文が完了しました`);
+  }
 };
 
 // 画像フルスクリーン表示（点検・出品票共通）
@@ -2292,6 +2322,10 @@ window.fullImgMaintain=async function(){
   const upd={maintained:newVal};
   if(newVal&&v.status2==='ng')upd.status2='ok';
   await dbUpd(`stock/${ins.vehicleId}`,upd);
+  if(newVal){
+    const colorStr=v.color?toFullWidth(v.color):'';
+    logNews(v.vin, `${v.name}${colorStr}の整備が完了しました`);
+  }
   // ボタン更新
   viewPhotoById(fullImgInspId);
 };
@@ -2305,6 +2339,11 @@ window.fullImgParts=async function(){
   await dbUpd(`stock/${ins.vehicleId}`,upd);
   // 点検シート自体のneedsPartsフラグも更新
   await dbUpd(`inspections/${fullImgInspId}`,{needsParts:newVal});
+  // News：部品注文は完了(OFF)時だけ記録
+  if(!newVal){
+    const colorStr=v.color?toFullWidth(v.color):'';
+    logNews(v.vin, `${v.name}${colorStr}の部品注文が完了しました`);
+  }
   viewPhotoById(fullImgInspId);
 };
 
