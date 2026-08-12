@@ -267,7 +267,7 @@
     <div class="header-inner">
     <div style="flex-shrink:0">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.85</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.86</span></div>
     </div>
     <div class="tabs">
       <div class="tab" onclick="switchTab('loaner')">代車/レンタ</div>
@@ -2154,22 +2154,22 @@ window.toggleInspParts=async function(inspId,e){
   if(newVal){
     // 部品注文ONなら点検済→要整備に（登録時と同じ挙動）
     upd.status2='ng';
-    // 右のメモ入力欄に文字があれば「mm/dd メモ」の形でinspMemoに保存
-    const memoInput=document.getElementById(`partsMemo-${inspId}`);
-    const memoText=(memoInput?.value||'').trim();
-    if(memoText){
-      const d=new Date();
-      const mmdd=`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
-      inspUpd.inspMemo=`${mmdd} ${memoText}`;
-    }
+  }
+  // 右のメモ入力欄に文字があれば、注文/完了どちらの操作でも「mm/dd メモ」の形でinspMemoに保存する
+  const memoInput=document.getElementById(`partsMemo-${inspId}`);
+  const memoText=(memoInput?.value||'').trim();
+  if(memoText){
+    const d=new Date();
+    const mmdd=`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+    inspUpd.inspMemo=`${mmdd} ${memoText}`;
   }
   await dbUpd(`stock/${ins.vehicleId}`,upd);
   // 点検シート自体のneedsPartsフラグも更新
   await dbUpd(`inspections/${inspId}`,inspUpd);
-  // News：部品注文は点滅が消えた(OFFになった)時=部品が揃って完了したタイミングだけ記録
+  // News：部品注文は点滅が消えた(OFFになった)時=部品が揃って完了したタイミングだけ記録(メモがあれば併記)
   if(!newVal){
     const colorStr=v.color?toFullWidth(v.color):'';
-    logNews(v.vin, `${v.name}${colorStr}の部品注文が完了しました`);
+    logNews(v.vin, `${v.name}${colorStr}の部品注文が完了しました${memoText?'('+memoText+')':''}`);
   }
 };
 
