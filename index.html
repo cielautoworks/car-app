@@ -141,6 +141,16 @@
   .full-wrap img{max-width:100%;max-height:100%;border-radius:10px;object-fit:contain;transform-origin:center center;transition:transform 0.1s ease;}
   .full-btns{display:flex;gap:8px;padding:10px 12px;flex-wrap:wrap;justify-content:center;flex-shrink:0}
   .full-btns .btn{padding:10px 16px;font-size:13px;flex-direction:column;gap:2px;min-width:72px;line-height:1.2}
+  /* AA出品票(ads.html/ハブ共有分)ビューア。full-wrapと見た目は揃えつつ、独立した表示領域として持つ */
+  .aa-viewer-wrap{position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:300;display:none;flex-direction:column;overflow:hidden}
+  .aa-viewer-wrap.open{display:flex}
+  .aa-viewer-body{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;align-items:center;padding:12px;min-height:0}
+  .aa-viewer-body img{width:100%;max-width:520px;border-radius:10px;object-fit:contain;flex-shrink:0}
+  @media(min-width:1000px){
+    .aa-viewer-body{flex-direction:row;flex-wrap:nowrap;justify-content:center;align-items:center;overflow-y:hidden}
+    .aa-viewer-body img{width:auto;max-width:46%;max-height:86vh}
+    .aa-viewer-body.single img{max-width:64%}
+  }
   /* 点検シート */
   .photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
   .photo-card{background:var(--surface2);border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border);position:relative}
@@ -525,6 +535,17 @@
   <div id="full-img-memo-area" style="flex-shrink:0;width:100%"></div>
 </div>
 
+<!-- AA出品票(ads.html/ハブ共有分)ビューア：PCは左右並び、スマホは上下スクロール -->
+<div class="aa-viewer-wrap" id="aa-viewer">
+  <div class="full-img-header">
+    <div class="close-x" onclick="closeAaViewer()">✕</div>
+    <div class="header-info">
+      <p style="font-size:13px;font-weight:700;color:#fff">AA出品票</p>
+    </div>
+  </div>
+  <div class="aa-viewer-body" id="aa-viewer-body"></div>
+</div>
+
 <script type="module">
 import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, set, update, remove, onValue, get }
@@ -561,14 +582,15 @@ const S2={
   skip:{label:'点検不要',       cls:'b-insp-skip'},
 };
 
-let cars={},stock={},inspections={},loanHistories={},listings={},stockArchive={};
+let cars={},stock={},inspections={},loanHistories={},listings={},stockArchive={},aaPhotoCounts={};
 let uploadDataUrl=null,selectedCarId=null,addCarType='loaner';
-let checkedIds=new Set(),inspCheckedIds=new Set();
+let checkedIds=new Set(),inspCheckedIds=new Set(),checkedArchiveIds=new Set();
 let fullImgInspId=null;
 let ready=false;
 let loanerFilter=null; // 代車フィルター状態
 let stockStatFilter=null; // 販売車統計BOXフィルター状態
 let inspPartsFilter=false; // 点検シート部品注文フィルター状態
+let archivePeriodFilter='all'; // アーカイブ一覧の期間フィルター状態
 
 function today(){return new Date().toLocaleDateString('ja-JP',{month:'2-digit',day:'2-digit'});}
 function nowTs(){return Date.now();}
@@ -655,16 +677,18 @@ const PEN_SVG=`<svg width="18" height="18"><use href="#ic-pen"/></svg>`;
 
 async function fetchAll(){
   try{
-    const [carsSnap,stockSnap,inspSnap,listSnap]=await Promise.all([
+    const [carsSnap,stockSnap,inspSnap,listSnap,aaCountsSnap]=await Promise.all([
       get(ref(db,'cars')),
       get(ref(db,'stock')),
       get(ref(db,'inspections')),
       get(ref(db,'listings')),
+      get(ref(db,'adsData/aaPhotoCounts')), // 軽量メタ情報(枚数のみ)。ads.html/ハブ経由のAA出品票有無をバッジに反映するため
     ]);
     cars        =carsSnap.val()||{};
     stock       =stockSnap.val()||{};
     inspections =inspSnap.val()||{};
     listings    =listSnap.val()||{};
+    aaPhotoCounts=aaCountsSnap.val()||{};
     if(!ready){ready=true;hideLoading();}
     setSyncSt('● 同期済み','ok');
     renderLoaner();
@@ -1301,6 +1325,8 @@ window.renderStock=function(){
     const s2i=s1==='undelivered'&&s2==='none' ? null : (S2[s2]||S2.none);
     const ic=Object.values(inspections).filter(i=>i.vehicleId===v.id).length;
     const hasListing=Object.values(listings).some(l=>l.vehicleId===v.id);
+    const hasAdsAa=(aaPhotoCounts[v.vin]||0)>0; // ads.html/ハブ経由のAA出品票(軽量メタ情報のみで判定、画像本体は取得しない)
+    const showAaBadge=hasListing||hasAdsAa;
     const chk=checkedIds.has(v.id)?'checked':'';
 
     // アクションボタン：点検不要・店頭未着・納車完了は非表示
@@ -1350,7 +1376,7 @@ window.renderStock=function(){
           <!-- 1行目：バッジ＋メモ -->
           <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-bottom:4px;cursor:pointer" onclick="openStockDetail('${v.id}')">
             <span class="badge ${s1cls}">${s1label}</span>
-            ${hasListing?`<span class="badge b-ad" style="cursor:pointer" onclick="event.stopPropagation();openListingFromBadge('${v.id}')">AA</span>`:''}
+            ${showAaBadge?`<span class="badge b-ad" style="cursor:pointer" onclick="event.stopPropagation();openAaBadge('${v.id}')">AA</span>`:''}
             ${s2i?`<span class="badge ${s2i.cls}">${s2i.label}</span>`:''}
             ${v.needsParts?'<span class="badge b-parts" style="font-size:10px">🔩部品注文</span>':''}
             ${v.memo?`<span style="font-size:13px;color:#fff;margin-left:2px;font-weight:500">${v.memo}</span>`:''}
@@ -1556,6 +1582,17 @@ window.openStockDetail=function(id){
             <button class="btn btn-xs btn-danger" onclick="deleteSingleInsp('${i.id}')">削除</button>
           </div>
         </div>`).join('')}
+      </div>
+    </div>`:''}
+    ${(aaPhotoCounts[v.vin]||0)>0?`
+    <div style="margin-bottom:10px">
+      <p class="lbl" style="margin-bottom:6px">AA出品票（ads.html・${aaPhotoCounts[v.vin]}枚）</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:6px;padding:8px 10px">
+        <span style="font-size:11px;color:var(--text3)">ads.html/ハブで管理(削除・変更はそちらから)</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-xs btn-gray" onclick="viewAaSlot('${v.vin}','img1')">AA1</button>
+          ${(aaPhotoCounts[v.vin]||0)>1?`<button class="btn btn-xs btn-gray" onclick="viewAaSlot('${v.vin}','img2')">AA2</button>`:''}
+        </div>
       </div>
     </div>`:''}
     <div style="margin-bottom:10px">
@@ -2076,6 +2113,57 @@ window.openListingFromBadge=async function(vid){
   openModal('modal-action');
 };
 
+// AAバッジタップ時の振り分け：ads.html/ハブ経由のAA出品票があれば専用ビューア、
+// なければ従来通りcar-app自身の出品票履歴一覧を開く
+window.openAaBadge=async function(vid){
+  const v=stock[vid];if(!v)return;
+  if((aaPhotoCounts[v.vin]||0)>0){
+    await openAaViewer(v.vin);
+  }else{
+    openListingFromBadge(vid);
+  }
+};
+
+// ads.html/ハブ経由のAA出品票(aaPhotos/{vin})を表示する専用ビューア
+// PC(横長)は2枚を左右並び(1枚の時は中央)、スマホ(縦長)は上下に並べてスクロール表示
+window.openAaViewer=async function(vin){
+  setSyncSt('● 読込中...','saving');
+  try{
+    const snap=await get(ref(db,`aaPhotos/${vin}`));
+    const data=snap.val()||{};
+    const imgs=[data.img1,data.img2].filter(Boolean);
+    if(!imgs.length){alert('AA出品票の画像が見つかりません');setSyncSt('● 同期済み','ok');return;}
+    const body=document.getElementById('aa-viewer-body');
+    body.className='aa-viewer-body'+(imgs.length===1?' single':'');
+    body.innerHTML=imgs.map(src=>`<img src="${src}">`).join('');
+    document.getElementById('aa-viewer').classList.add('open');
+  }catch(err){
+    alert('画像の読込に失敗しました');
+  }
+  setSyncSt('● 同期済み','ok');
+};
+window.closeAaViewer=function(){document.getElementById('aa-viewer').classList.remove('open');};
+
+// 車両詳細モーダルの「AA出品票(ads.html)」行のAA1/AA2ボタン用：1枚だけをフルスクリーン表示
+// (既存のopenFullImgとは別関数にして、点検・出品票の既存動作には触れない)
+window.viewAaSlot=async function(vin,slot){
+  setSyncSt('● 読込中...','saving');
+  try{
+    const snap=await get(ref(db,`aaPhotos/${vin}/${slot}`));
+    const src=snap.val();
+    if(!src){alert('画像がありません');setSyncSt('● 同期済み','ok');return;}
+    document.getElementById('full-img-el').src=src;
+    document.getElementById('full-img-name').textContent='AA出品票('+(slot==='img1'?'1枚目':'2枚目')+')';
+    document.getElementById('full-img-meta').textContent='ads.html/ハブで管理(削除・変更はそちらから)';
+    document.getElementById('full-btns').innerHTML='';
+    document.getElementById('full-img-memo-area').innerHTML='';
+    document.getElementById('full-img').classList.add('open');
+  }catch(err){
+    alert('画像の読込に失敗しました');
+  }
+  setSyncSt('● 同期済み','ok');
+};
+
 window.saveInspMemo=async function(id){
   const val=document.getElementById('full-img-memo-input')?.value.trim()||'';
   await dbUpd(`inspections/${id}`,{inspMemo:val});
@@ -2114,6 +2202,23 @@ window.fullImgParts=async function(){
 };
 
 // ===== アーカイブ（納車完了パス分離）=====
+// 納車完了(アーカイブ)時に、AA出品票関連データ(aaPhotos・car-app自身のlistings/listingPhotos)を削除する。
+// 点検シート(inspections/inspectionPhotos)は絶対に参照・削除しない。
+async function deleteAaDataForVehicle(vin,vehicleId){
+  const dels=[];
+  if(vin){
+    dels.push(remove(ref(db,`aaPhotos/${vin}`)));
+    dels.push(remove(ref(db,`adsData/aaPhotoCounts/${vin}`)));
+    delete aaPhotoCounts[vin];
+  }
+  const ownListings=Object.values(listings).filter(l=>l.vehicleId===vehicleId);
+  for(const l of ownListings){
+    dels.push(remove(ref(db,`listings/${l.id}`)));
+    dels.push(remove(ref(db,`listingPhotos/${l.id}`)));
+    delete listings[l.id];
+  }
+  await Promise.all(dels);
+}
 async function archiveVehicle(id){
   const v=stock[id];if(!v)return;
   const archivedAt=nowTs();
@@ -2121,7 +2226,9 @@ async function archiveVehicle(id){
   await set(ref(db,`stockArchive/${id}`),Object.assign({},v,{archivedAt}));
   // 2. stockから削除
   await remove(ref(db,`stock/${id}`));
-  // 3. ローカル更新
+  // 3. AA出品票関連データを削除(aaPhotos・car-app自身のlistings/listingPhotos。点検シートには触れない)
+  await deleteAaDataForVehicle(v.vin,id);
+  // 4. ローカル更新
   stockArchive[id]=Object.assign({},v,{archivedAt});
   delete stock[id];
   setSyncSt('● 同期済み','ok');
@@ -2132,15 +2239,19 @@ async function archiveMultiple(ids){
   const archivedAt=nowTs();
   const writes={};
   const dels=[];
+  const vins=[];
   for(const id of ids){
     const v=stock[id];if(!v)continue;
     writes[`stockArchive/${id}`]=Object.assign({},v,{archivedAt});
     dels.push(remove(ref(db,`stock/${id}`)));
+    vins.push([v.vin,id]);
     stockArchive[id]=Object.assign({},v,{archivedAt});
     delete stock[id];
   }
   // 書き込みと削除を並列実行
   await Promise.all([update(ref(db),writes),...dels]);
+  // AA出品票関連データを削除(aaPhotos・car-app自身のlistings/listingPhotos。点検シートには触れない)
+  await Promise.all(vins.map(([vin,id])=>deleteAaDataForVehicle(vin,id)));
   setSyncSt('● 同期済み','ok');
   renderStock();
 }
@@ -2178,18 +2289,94 @@ function renderArchiveModal(){
     return;
   }
   const q=normalizeQ(document.getElementById('archive-search')?.value||'');
-  const filtered=q?list.filter(v=>[v.name,v.vin,v.color].some(f=>normalizeQ(f||'').includes(q))):list;
+  let filtered=q?list.filter(v=>[v.name,v.vin,v.color].some(f=>normalizeQ(f||'').includes(q))):list;
+  // 期間フィルター(アーカイブ日からの経過月数)
+  const periodMonths={all:0,m3:3,m6:6,y1:12}[archivePeriodFilter]||0;
+  if(periodMonths>0){
+    const threshold=Date.now()-periodMonths*30*86400000;
+    filtered=filtered.filter(v=>(v.archivedAt||0)<=threshold);
+  }
+  // 選択チェックボックスは表示中の一覧に無い車両分を持ち続けない(検索/絞り込みで見えなくなった選択はクリア)
+  const visibleIds=new Set(filtered.map(v=>v.id));
+  for(const cid of Array.from(checkedArchiveIds)) if(!visibleIds.has(cid)) checkedArchiveIds.delete(cid);
+  const periodOpts=[['all','すべて'],['m3','3ヶ月以上経過'],['m6','6ヶ月以上経過'],['y1','1年以上経過']]
+    .map(([k,l])=>`<option value="${k}" ${archivePeriodFilter===k?'selected':''}>${l}</option>`).join('');
   if(el)el.innerHTML=`
     <input type="text" id="archive-search" placeholder="車名・車台番号で検索..." oninput="renderArchiveModal()" style="margin-bottom:8px">
-    ${filtered.length?filtered.map(v=>`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <select id="archive-period-filter" onchange="archivePeriodFilter=this.value;checkedArchiveIds.clear();renderArchiveModal()" style="flex:1;margin-bottom:0">${periodOpts}</select>
+      <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text2);white-space:nowrap">
+        <input type="checkbox" onchange="toggleArchiveCheckAll(this.checked)" ${filtered.length&&filtered.every(v=>checkedArchiveIds.has(v.id))?'checked':''}>全選択
+      </label>
+    </div>
+    ${filtered.length?filtered.map(v=>{
+      const hasInsp=Object.values(inspections).some(i=>i.vehicleId===v.id);
+      const ownAaCount=Object.values(listings).filter(l=>l.vehicleId===v.id).length;
+      const totalAa=ownAaCount+(aaPhotoCounts[v.vin]||0);
+      const chk=checkedArchiveIds.has(v.id)?'checked':'';
+      return`
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px">
-      <div style="font-weight:700;font-size:14px">${v.name||'不明'} ${v.color?toFullWidth(v.color):''}</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:2px">${v.vin||''}</div>
-      <div style="font-size:11px;color:var(--text3)">仕入：${v.date||'-'} / アーカイブ：${v.archivedAt?new Date(v.archivedAt).toLocaleDateString('ja-JP',{month:'2-digit',day:'2-digit'}):'-'}</div>
-      <button class="btn btn-sm btn-gray" style="margin-top:8px;width:100%" onclick="restoreFromArchive('${v.id}')">↩ 在庫に戻す</button>
-    </div>`).join(''):'<p style="text-align:center;color:var(--text3);padding:10px 0">該当なし</p>'}
+      <div style="display:flex;gap:8px;align-items:flex-start">
+        <input type="checkbox" ${chk} onchange="toggleArchiveCheck('${v.id}',this.checked)" style="margin-top:3px;flex-shrink:0">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:14px">${v.name||'不明'} ${v.color?toFullWidth(v.color):''}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">${v.vin||''}</div>
+          <div style="font-size:11px;color:var(--text3)">仕入：${v.date||'-'} / アーカイブ：${v.archivedAt?new Date(v.archivedAt).toLocaleDateString('ja-JP',{month:'2-digit',day:'2-digit'}):'-'}</div>
+          <div style="display:flex;gap:4px;margin-top:6px">
+            <span class="badge ${hasInsp?'b-insp-ok':'b-insp-skip'}" style="font-size:10px">📋点検シート${hasInsp?'あり':'なし'}</span>
+            <span class="badge ${totalAa?'b-ad':'b-insp-skip'}" style="font-size:10px">🖼AA出品票${totalAa}枚</span>
+          </div>
+          <button class="btn btn-sm btn-gray" style="margin-top:8px;width:100%" onclick="restoreFromArchive('${v.id}')">↩ 在庫に戻す</button>
+        </div>
+      </div>
+    </div>`;}).join(''):'<p style="text-align:center;color:var(--text3);padding:10px 0">該当なし</p>'}
+    <div id="archive-bulk-bar" style="display:${checkedArchiveIds.size?'flex':'none'};gap:6px;margin-top:4px">
+      <button class="btn btn-sm btn-orange" style="flex:1" onclick="bulkDeleteAaFromArchive()">🖼 AA画像削除(${checkedArchiveIds.size})</button>
+      <button class="btn btn-sm btn-danger" style="flex:1" onclick="bulkFullDeleteFromArchive()">🗑 完全削除(${checkedArchiveIds.size})</button>
+    </div>
     <button class="btn" style="width:100%;margin-top:4px" onclick="closeModal('modal-action')">閉じる</button>`;
 }
+window.toggleArchiveCheck=function(id,checked){
+  if(checked)checkedArchiveIds.add(id);else checkedArchiveIds.delete(id);
+  renderArchiveModal();
+};
+window.toggleArchiveCheckAll=function(checked){
+  const q=normalizeQ(document.getElementById('archive-search')?.value||'');
+  const periodMonths={all:0,m3:3,m6:6,y1:12}[archivePeriodFilter]||0;
+  let list=Object.values(stockArchive);
+  if(q)list=list.filter(v=>[v.name,v.vin,v.color].some(f=>normalizeQ(f||'').includes(q)));
+  if(periodMonths>0){const threshold=Date.now()-periodMonths*30*86400000;list=list.filter(v=>(v.archivedAt||0)<=threshold);}
+  if(checked)list.forEach(v=>checkedArchiveIds.add(v.id));else list.forEach(v=>checkedArchiveIds.delete(v.id));
+  renderArchiveModal();
+};
+// アーカイブ一括操作：選択車両のAA出品票関連データ(aaPhotos・listings/listingPhotos)だけを削除。
+// アーカイブ記録自体・点検シートには一切触れない。
+window.bulkDeleteAaFromArchive=async function(){
+  const ids=Array.from(checkedArchiveIds).filter(id=>stockArchive[id]);
+  if(!ids.length)return;
+  if(!confirm(`選択した${ids.length}台のAA出品票関連データ(aaPhotos・出品票履歴)を削除します。アーカイブ記録・点検シートは残ります。よろしいですか？`))return;
+  showLoading('AA画像を削除中...');
+  await Promise.all(ids.map(id=>deleteAaDataForVehicle(stockArchive[id].vin,id)));
+  checkedArchiveIds.clear();
+  hideLoading();
+  setSyncSt('● 同期済み','ok');
+  renderArchiveModal();
+};
+// アーカイブ一括操作：選択車両のアーカイブ記録自体を完全に削除(一覧から消える・取り消し不可)。
+// AA出品票関連データも合わせて削除するが、点検シートには一切触れない。
+window.bulkFullDeleteFromArchive=async function(){
+  const ids=Array.from(checkedArchiveIds).filter(id=>stockArchive[id]);
+  if(!ids.length)return;
+  if(!confirm(`選択した${ids.length}台をアーカイブから完全に削除します。この操作は取り消せません(点検シートは削除されません)。よろしいですか？`))return;
+  showLoading('完全削除中...');
+  await Promise.all(ids.map(id=>deleteAaDataForVehicle(stockArchive[id].vin,id)));
+  await Promise.all(ids.map(id=>remove(ref(db,`stockArchive/${id}`))));
+  ids.forEach(id=>delete stockArchive[id]);
+  checkedArchiveIds.clear();
+  hideLoading();
+  setSyncSt('● 同期済み','ok');
+  renderArchiveModal();
+};
 // ヘッダー長押し3秒でアーカイブボタン表示
 (function(){
   let timer=null;
