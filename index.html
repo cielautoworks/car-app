@@ -267,7 +267,7 @@
     <div class="header-inner">
     <div style="flex-shrink:0">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.86</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.87</span></div>
     </div>
     <div class="tabs">
       <div class="tab" onclick="switchTab('loaner')">代車/レンタ</div>
@@ -2135,7 +2135,7 @@ window.renderInspections=function renderInspections(){
         <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;align-items:center">
           <button class="btn btn-xs btn-gray" onclick="viewPhotoById('${ins.id}')">🖼 画像</button>
           ${partsBtn}
-          ${ins.vehicleId&&!isArchived?`<input type="text" class="parts-memo-input" id="partsMemo-${ins.id}" placeholder="メモ(部品注文時に保存)" onclick="event.stopPropagation()">`:''}
+          ${ins.vehicleId&&!isArchived?`<input type="text" class="parts-memo-input" id="partsMemo-${ins.id}" placeholder="メモ(部品注文時に保存)" onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter'){event.preventDefault();toggleInspParts('${ins.id}',event);}">`:''}
         </div>
       </div>
     </div>`;
