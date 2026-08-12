@@ -263,7 +263,7 @@
     <div class="header-inner">
     <div style="flex-shrink:0">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.83</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.84</span></div>
     </div>
     <div class="tabs">
       <div class="tab" onclick="switchTab('loaner')">代車/レンタ</div>
@@ -1493,7 +1493,7 @@ window.quickAction=async function(e,id,type){
   e.stopPropagation();
   const v=stock[id];if(!v)return;
   const upd={};
-  let turnedOn=false;
+  let turnedOn=false,turnedOff=false;
   if(type==='clean'){    upd.cleaned=!v.cleaned;         turnedOn=upd.cleaned; }
   if(type==='photo'){    upd.photographed=!v.photographed;turnedOn=upd.photographed; }
   if(type==='dclean')   upd.deliveryClean=!v.deliveryClean;
@@ -1510,13 +1510,20 @@ window.quickAction=async function(e,id,type){
       if(v.status2==='ok') upd.status2='ng';
     }
   }
-  if(type==='parts'){    upd.needsParts=!v.needsParts;   turnedOn=upd.needsParts; }
+  if(type==='parts'){
+    upd.needsParts=!v.needsParts;
+    // 部品注文は他3つと逆：点滅(needsParts=true)が消えた時=部品が揃って完了したタイミング
+    turnedOff=!upd.needsParts;
+  }
   await dbUpd(`stock/${id}`,upd);
-  // News：清掃/撮影/整備/部品注文はONになった時だけ記録(OFFへの取消操作は記録しない)
+  // News：清掃/撮影/整備はONになった時、部品注文は点滅が消えた(OFFになった)時だけ記録
+  const colorStr=v.color?toFullWidth(v.color):'';
   if(turnedOn){
-    const colorStr=v.color?toFullWidth(v.color):'';
-    const labels={clean:'清掃が完了しました',photo:'撮影が完了しました',maintain:'整備が完了しました',parts:'部品注文が必要になりました'};
+    const labels={clean:'清掃が完了しました',photo:'撮影が完了しました',maintain:'整備が完了しました'};
     if(labels[type]) logNews(v.vin, `${v.name}${colorStr}の${labels[type]}`);
+  }
+  if(turnedOff&&type==='parts'){
+    logNews(v.vin, `${v.name}${colorStr}の部品注文が完了しました`);
   }
 };
 window.indivChange=async function(id,field,val){
