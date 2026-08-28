@@ -267,7 +267,7 @@
     <div class="header-inner">
     <div style="flex-shrink:0">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.87</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.88</span></div>
     </div>
     <div class="tabs">
       <div class="tab" onclick="switchTab('loaner')">代車/レンタ</div>
@@ -1191,10 +1191,16 @@ function parseCSVHeader(text){
   const g=(row,i)=>i>=0&&i<row.length?row[i].replace(/^"|"$/g,'').trim():'';
   return {lines,hi,idx,g};
 }
+// ハブ(ciel-system)のtanaoroshiと車台番号を揃えるための正規化(空白除去+大文字化)。
+// stock自体の vin 表記(未正規化のまま)は既存動作を変えないよう、そのまま保持する。
+function normVin(v){ return (v||'').replace(/\s+/g,'').toUpperCase(); }
+
 function parseCSV(text){
   const {lines,hi,idx,g}=parseCSVHeader(text);
   const existVins=new Set(Object.values(stock).map(v=>v.vin).filter(Boolean));
-  const batch={};let added=0,skipped=0;
+  const batch={};
+  const tanaoroshiBatch={}; // adsData/tanaoroshi用。ads.html/ハブ経由のAA出品票候補・掲載チェックにここから車両が見えるようにするため、stockと同時に登録する。
+  let added=0,skipped=0;
   for(let i=hi+1;i<lines.length;i++){
     const row=parseLine(lines[i]);if(!row||row.length<5)continue;
     const first=g(row,0);
@@ -1202,20 +1208,33 @@ function parseCSV(text){
     const vin=g(row,idx.vin);
     if(vin&&existVins.has(vin)){skipped++;continue;}
     const id=uid();
+    // tanaoroshi用は、ads.html側の日付解析(「令和7年11月」等の表記を前提)に合わせるため、
+    // fmtDate()で変換する前の生の文字列をそのまま使う(stock用のv.date/v.shakenとは別に保持)。
+    const rawDate=g(row,idx.date), rawShaken=g(row,idx.shaken);
     const v={
-      id,date:fmtDate(g(row,idx.date)),
+      id,date:fmtDate(rawDate),
       name:toFullWidth(g(row,idx.name)),sup:g(row,idx.sup),
       color:g(row,idx.color),vin,year:fmtDate(g(row,idx.year)),
-      shaken:fmtDate(g(row,idx.shaken)),
+      shaken:fmtDate(rawShaken),
       price:g(row,idx.price),total:g(row,idx.total),
       regNo:'',status1:'undelivered',status2:'none',
       cleaned:false,photographed:false,maintained:false,needsParts:false,
       memo:'',isLoaner:false,addedAt:nowTs()
     };
-    if(v.name||v.vin){batch[id]=v;if(vin)existVins.add(vin);added++;}
+    if(v.name||v.vin){
+      batch[id]=v;if(vin)existVins.add(vin);added++;
+      if(vin){
+        tanaoroshiBatch[normVin(vin)]={
+          car_name:v.name,color:v.color,shaken:rawShaken,shiire_date:rawDate,
+        };
+      }
+    }
   }
   if(!added){alert(`追加: 0台 / スキップ(重複): ${skipped}台`);return;}
-  update(ref(db,'stock'),batch).then(()=>{
+  Promise.all([
+    update(ref(db,'stock'),batch),
+    update(ref(db,'adsData/tanaoroshi'),tanaoroshiBatch),
+  ]).then(()=>{
     alert(`読み込み完了 ✅\n追加: ${added}台 / スキップ(重複): ${skipped}台`);
     logNews('', `新規車両を${added}台登録しました`);
   }).catch(err=>alert('保存エラー: '+err.message));
