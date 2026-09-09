@@ -267,7 +267,7 @@
     <div class="header-inner">
     <div style="flex-shrink:0">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.88</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.89</span></div>
     </div>
     <div class="tabs">
       <div class="tab" onclick="switchTab('loaner')">代車/レンタ</div>
@@ -308,6 +308,7 @@
       <span style="font-size:12px;font-weight:700;color:var(--text2)">一覧</span>
       <div style="display:flex;gap:5px">
         <button class="btn btn-sm" style="background:var(--purple-bg);border-color:var(--purple)" onclick="openHistory()">📋 履歴</button>
+        <button class="btn btn-sm" style="background:var(--surface3);border-color:var(--border2)" onclick="checkOrphanCars()">🔍 整合性チェック</button>
         <button class="btn btn-sm btn-success" onclick="openAddCar('loaner')">＋ 代車</button>
         <button class="btn btn-sm btn-cyan" onclick="openAddCar('rental')">＋ レンタ</button>
       </div>
@@ -2384,6 +2385,34 @@ async function deleteAaDataForVehicle(vin,vehicleId){
   }
   await Promise.all(dels);
 }
+// 【整合性チェック】cars(代車・レンタカー)のstockIdが、stockにもstockArchiveにも
+// 存在しない=参照先を失った(車名だけ表示される不具合の原因)レコードを洗い出し、
+// 確認のうえまとめて解除(cars側の削除のみ。stock/stockArchive側は一切変更しない)する。
+// v1.88以前の「納車完了」処理には代車・レンタカー解除漏れがあったため、
+// 過去にできてしまった孤立レコードの掃除用。v1.89以降は新規発生しないはず。
+window.checkOrphanCars=async function(){
+  const orphans=Object.values(cars).filter(c=>c.stockId&&!stock[c.stockId]);
+  if(!orphans.length){alert('✅ 孤立した代車・レンタカー登録は見つかりませんでした。');return;}
+  const lines=orphans.map(c=>{
+    const inArchive=stockArchive[c.stockId];
+    return `・${c.name||'(車名なし)'}${c.plate?' ['+c.plate+']':''} ${inArchive?'(納車済みアーカイブへ移動済み)':'(参照先データが存在しません)'}`;
+  }).join('\n');
+  if(!confirm(`参照先の在庫車両を失っている代車・レンタカー登録が${orphans.length}件見つかりました。\n\n${lines}\n\nこれらの代車・レンタカー登録をまとめて解除しますか？\n(在庫データ・アーカイブデータ自体は一切変更されません。代車・レンタカーの登録のみ解除します)`))return;
+  await Promise.all(orphans.map(c=>dbDel(`cars/${c.id}`)));
+  orphans.forEach(c=>delete cars[c.id]);
+  setSyncSt('● 同期済み','ok');
+  renderLoaner();
+  alert(`✅ ${orphans.length}件の代車・レンタカー登録を解除しました。`);
+};
+// 車両アーカイブ時、代車・レンタカー(cars/{id})として登録されたままだと
+// stockIdの参照先が消えて表示が車名だけになってしまうため、紐づくcarsレコードも一緒に削除する。
+async function unlinkCarsForStockId(id){
+  const car=Object.values(cars).find(c=>c.stockId===id);
+  if(!car)return null;
+  await dbDel(`cars/${car.id}`);
+  delete cars[car.id];
+  return car;
+}
 async function archiveVehicle(id){
   const v=stock[id];if(!v)return;
   const archivedAt=nowTs();
@@ -2393,10 +2422,12 @@ async function archiveVehicle(id){
   await remove(ref(db,`stock/${id}`));
   // 3. AA出品票関連データを削除(aaPhotos・car-app自身のlistings/listingPhotos。点検シートには触れない)
   await deleteAaDataForVehicle(v.vin,id);
+  // 3.5 代車・レンタカー登録が残っていれば解除(stockId参照先消失による表示崩れ防止)
+  const unlinkedCar=await unlinkCarsForStockId(id);
   // 4. ローカル更新
   stockArchive[id]=Object.assign({},v,{archivedAt});
   delete stock[id];
-  logNews(v.vin, `${v.name}${v.color?toFullWidth(v.color):''}が納車完了しました`);
+  logNews(v.vin, `${v.name}${v.color?toFullWidth(v.color):''}が納車完了しました${unlinkedCar?'(代車・レンタカー登録も解除しました)':''}`);
   setSyncSt('● 同期済み','ok');
   renderStock();
 }
@@ -2407,17 +2438,21 @@ async function archiveMultiple(ids){
   const dels=[];
   const vins=[];
   const newsItems=[];
+  const carUnlinkPromises=[];
   for(const id of ids){
     const v=stock[id];if(!v)continue;
     writes[`stockArchive/${id}`]=Object.assign({},v,{archivedAt});
     dels.push(remove(ref(db,`stock/${id}`)));
     vins.push([v.vin,id]);
-    newsItems.push([v.vin, `${v.name}${v.color?toFullWidth(v.color):''}が納車完了しました`]);
+    carUnlinkPromises.push(unlinkCarsForStockId(id).then(car=>[id,car]));
     stockArchive[id]=Object.assign({},v,{archivedAt});
     delete stock[id];
   }
-  // 書き込みと削除を並列実行
-  await Promise.all([update(ref(db),writes),...dels]);
+  // 書き込み・削除・代車/レンタカー登録解除を並列実行
+  const [,,...unlinkedResults]=await Promise.all([update(ref(db),writes),Promise.all(dels),Promise.all(carUnlinkPromises)]);
+  const unlinkedByStockId={};
+  (unlinkedResults[0]||[]).forEach(([id,car])=>{unlinkedByStockId[id]=car;});
+  ids.forEach(id=>{const v=stockArchive[id];if(v)newsItems.push([v.vin, `${v.name}${v.color?toFullWidth(v.color):''}が納車完了しました${unlinkedByStockId[id]?'(代車・レンタカー登録も解除しました)':''}`]);});
   // AA出品票関連データを削除(aaPhotos・car-app自身のlistings/listingPhotos。点検シートには触れない)
   await Promise.all(vins.map(([vin,id])=>deleteAaDataForVehicle(vin,id)));
   // News：1台ごとに個別記録
