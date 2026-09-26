@@ -273,7 +273,7 @@
     <div class="header-inner">
     <div style="flex-shrink:0">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.90</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.91</span></div>
     </div>
     <div class="tabs">
       <div class="tab" onclick="switchTab('loaner')">代車/レンタ</div>
@@ -282,6 +282,7 @@
       <div class="tab" onclick="switchTab('news')">News</div>
     </div>
     <div class="header-right">
+      <a href="https://cielautoworks.github.io/ciel-system/" target="_blank" rel="noopener" style="background:none;border:none;cursor:pointer;padding:4px 6px;color:var(--text3);font-size:18px;flex-shrink:0;line-height:1;text-decoration:none" title="ciel-systemを開く">🏠</a>
       <button onclick="manualRefresh()" id="btn-refresh" style="background:none;border:none;cursor:pointer;padding:4px 6px;color:var(--text3);font-size:18px;flex-shrink:0" title="更新">🔄</button>
       <span class="sync-badge connecting" id="sync-st" style="flex-shrink:0">● 接続中</span>
     </div>
@@ -368,7 +369,7 @@
     </div>
     <div class="search-row">
       <div class="search-wrap" style="flex:1">
-        <input type="text" id="stock-search" placeholder="車名・色・仕入先など部分一致..." oninput="onSearchInput(this);renderStock()">
+        <input type="text" id="stock-search" placeholder="車名・色・仕入先など部分一致..." oninput="onSearchInput(this);syncPairedSearch('stock-search');renderStock()">
         <button type="button" class="search-clear" onclick="clearSearchInput('stock-search','renderStock')">×</button>
       </div>
       <select id="stock-filter" onchange="renderStock()" style="font-size:11px">
@@ -413,7 +414,7 @@
     </div>
     <div style="display:flex;gap:6px;margin-bottom:8px">
       <div class="search-wrap" style="flex:1">
-        <input type="text" id="insp-search" placeholder="車名・色・型式・車台番号で検索..." oninput="onSearchInput(this);renderInspections()">
+        <input type="text" id="insp-search" placeholder="車名・色・型式・車台番号で検索..." oninput="onSearchInput(this);syncPairedSearch('insp-search');renderInspections()">
         <button type="button" class="search-clear" onclick="clearSearchInput('insp-search','renderInspections')">×</button>
       </div>
       <button class="btn btn-sm" id="btn-parts-filter" onclick="toggleInspPartsFilter()" style="border-color:var(--red);color:var(--red);font-size:11px;flex-shrink:0">🔩 部品</button>
@@ -680,10 +681,20 @@ window.onSearchInput=function(inputEl){
   const wrap=inputEl.closest('.search-wrap');
   if(wrap)wrap.classList.toggle('has-value',!!inputEl.value);
 };
+// 販売車タブ・点検シートタブの検索欄は同じ絞り込み文字列を共有する(タブを切り替えても入力内容を保持)
+const SEARCH_SYNC_PAIRS={'stock-search':'insp-search','insp-search':'stock-search'};
+window.syncPairedSearch=function(inputId){
+  const pairId=SEARCH_SYNC_PAIRS[inputId];if(!pairId)return;
+  const src=document.getElementById(inputId),dst=document.getElementById(pairId);
+  if(!src||!dst||dst.value===src.value)return;
+  dst.value=src.value;
+  onSearchInput(dst);
+};
 window.clearSearchInput=function(inputId,rerenderFnName){
   const el=document.getElementById(inputId);if(!el)return;
   el.value='';
   onSearchInput(el);
+  syncPairedSearch(inputId);
   if(typeof window[rerenderFnName]==='function')window[rerenderFnName]();
   el.focus();
 };
