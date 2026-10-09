@@ -36,7 +36,7 @@
   .app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
   .header{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
   .header-inner{padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
-  .header-title{font-size:15px;font-weight:700;color:var(--accent)}
+  .header-title{font-size:15px;font-weight:700;color:var(--accent);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
   .header-sub{font-size:10px;color:var(--text3);margin-top:1px}
   .sync-badge{font-size:10px;padding:3px 8px;border-radius:20px;background:var(--green-bg);color:var(--green);font-weight:700}
   .sync-badge.error{background:var(--red-bg);color:var(--red)}
@@ -273,7 +273,7 @@
     <div class="header-inner">
     <div style="flex-shrink:0">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.91</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.92</span></div>
     </div>
     <div class="tabs">
       <div class="tab" onclick="switchTab('loaner')">代車/レンタ</div>
@@ -316,9 +316,6 @@
       <div style="display:flex;gap:5px">
         <button class="btn btn-sm" style="background:var(--purple-bg);border-color:var(--purple)" onclick="openHistory()">📋 履歴</button>
         <button class="btn btn-sm" style="background:var(--surface3);border-color:var(--border2)" onclick="checkOrphanCars()">🔍 整合性チェック</button>
-        <button class="btn btn-sm" style="background:var(--surface3);border-color:var(--border2)" onclick="migrateListingsToAaPhotos()">🔁 AA画像移行(1回のみ)</button>
-        <button class="btn btn-sm btn-success" onclick="openAddCar('loaner')">＋ 代車</button>
-        <button class="btn btn-sm btn-cyan" onclick="openAddCar('rental')">＋ レンタ</button>
       </div>
     </div>
     <div id="loaner-list"></div>
@@ -647,8 +644,8 @@ function toFullWidth(s){
     'タ':'ダ','チ':'ヂ','ツ':'ヅ','テ':'デ','ト':'ド','ハ':'バ','ヒ':'ビ','フ':'ブ','ヘ':'ベ','ホ':'ボ','ウ':'ヴ'};
   const hdk={'ハ':'パ','ヒ':'ピ','フ':'プ','ヘ':'ペ','ホ':'ポ'};
   // U+FF9E(ﾞ)・U+FF9F(ﾟ)も濁点・半濁点として処理
-  const DAKUTEN  =['\uFF9E','\u309B','\u3099','゛'];
-  const HANDAKUTEN=['\uFF9F','\u309C','\u309A','゜'];
+  const DAKUTEN  =['ﾞ','゛','゙','゛'];
+  const HANDAKUTEN=['ﾟ','゜','゚','゜'];
   const chars=[...s].map(c=>kanaMap[c]||c);
   let result='';
   for(let i=0;i<chars.length;i++){
@@ -671,8 +668,8 @@ function normalizeQ(s){
   return s
     .replace(/[Ａ-Ｚａ-ｚ０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0))
     .replace(/　/g,' ')
-    .replace(/[\u30A1-\u30F6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60))
-    .replace(/[ｦ-ﾟ]+/g,s=>toFullWidth(s).replace(/[\u30A1-\u30F6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60)))
+    .replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60))
+    .replace(/[ｦ-ﾟ]+/g,s=>toFullWidth(s).replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60)))
     .toLowerCase();
 }
 
@@ -1213,7 +1210,7 @@ window.importCSV=function(e){
 };
 // CSV共通ヘッダー解析
 function parseCSVHeader(text){
-  text=text.replace(/^\uFEFF/,'');
+  text=text.replace(/^﻿/,'');
   const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
   let hi=8;
   for(let i=0;i<Math.min(15,lines.length);i++){
@@ -1887,6 +1884,8 @@ async function updateAaPhotoCount(vin,data){
 //  ・対象車両にすでにaaPhotosが登録済み(ads/hub/pricing側のデータを正とする)
 //    → aaPhotosには一切触れず、car-app側の重複データだけを削除
 // 移行後は対象がなくなるため、誤って複数回実行しても害はない。
+// (v1.92でUI上のボタンは廃止。移行は完了済みのため実行手段をなくしたが、
+//  関数自体は後方互換のため残している)
 window.migrateListingsToAaPhotos=async function(){
   const targets=Object.values(listings).filter(l=>l.vehicleId);
   if(!targets.length){alert('移行対象の出品票(旧形式)は見つかりませんでした。');return;}
@@ -2400,6 +2399,10 @@ window.openAaViewer=async function(vin){
   setSyncSt('● 同期済み','ok');
 };
 window.closeAaViewer=function(){document.getElementById('aa-viewer').classList.remove('open');};
+// 背景(画像以外の領域)タップで閉じる。full-img-containerの既存パターンに合わせる。
+document.getElementById('aa-viewer-body').addEventListener('click',e=>{
+  if(e.target.id==='aa-viewer-body')closeAaViewer();
+});
 
 // 車両詳細モーダルの「AA出品票(ads.html)」行のAA1/AA2ボタン用：1枚だけをフルスクリーン表示
 // (既存のopenFullImgとは別関数にして、点検・出品票の既存動作には触れない)
