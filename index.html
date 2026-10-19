@@ -273,7 +273,7 @@
     <div class="header-inner">
     <div style="flex-shrink:0">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.93</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.94</span></div>
     </div>
     <div class="tabs">
       <div class="tab" onclick="switchTab('loaner')">代車/レンタ</div>
@@ -1229,6 +1229,8 @@ function parseCSVHeader(text){
 // ハブ(ciel-system)のtanaoroshiと車台番号を揃えるための正規化(空白除去+大文字化)。
 // stock自体の vin 表記(未正規化のまま)は既存動作を変えないよう、そのまま保持する。
 function normVin(v){ return (v||'').replace(/\s+/g,'').toUpperCase(); }
+// 仕入先名の表示用変換(表示のみ。Firebaseのstock.supの値は変えない。pricing.htmlと同じルール)
+function displaySupplier(sup){ if(!sup) return ''; if(sup.includes('新潟県中古車販売商工組合')) return 'JU新潟'; if(sup.includes('トヨタユーゼック') || sup.includes('TAA東北')) return 'TAA東北'; return sup; }
 
 function parseCSV(text){
   const {lines,hi,idx,g}=parseCSVHeader(text);
@@ -1406,7 +1408,7 @@ window.renderStock=function(){
     return da>db2?-1:1;
   });
 
-  if(q)list=list.filter(v=>[v.name,v.vin,v.color,v.sup,v.year,v.regNo]
+  if(q)list=list.filter(v=>[v.name,v.vin,v.color,v.sup,displaySupplier(v.sup),v.year,v.regNo]
     .some(fld=>normalizeQ(String(fld||'')).includes(q)));
 
   if(f==='parts')         list=list.filter(v=>v.needsParts);
@@ -1532,7 +1534,7 @@ window.renderStock=function(){
           </div>
           <!-- 3行目：仕入日・仕入先・合計金額 -->
           <div style="font-size:11px;color:var(--text2);margin-top:3px;cursor:pointer" onclick="openStockDetail('${v.id}')">
-            ${v.date?`仕入 ${v.date}`:''}${v.sup?` / ${v.sup}`:''}${v.total?` / ¥${fmt(v.total)}`:''}
+            ${v.date?`仕入 ${v.date}`:''}${v.sup?` / ${displaySupplier(v.sup)}`:''}${v.total?` / ¥${fmt(v.total)}`:''}
           </div>
           <!-- 4行目：年式（和暦）・車台番号 -->
           <div style="font-size:11px;color:var(--text3);margin-top:1px;cursor:pointer" onclick="openStockDetail('${v.id}')">
@@ -1720,7 +1722,7 @@ window.openStockDetail=function(id){
   const yearJp=toJapaneseYear(v.year);
   const rows=[
     ['車台番号',v.vin],['色',v.color],['年式',yearJp],['車検期限',v.shaken],
-    ['仕入日',v.date],['仕入先',v.sup],['仕入金額',v.price?'¥'+fmt(v.price):''],
+    ['仕入日',v.date],['仕入先',displaySupplier(v.sup)],['仕入金額',v.price?'¥'+fmt(v.price):''],
     ['合計金額',v.total?'¥'+fmt(v.total):''],
   ].filter(([,val])=>val).map(([k,val])=>`<tr><td>${k}</td><td>${val}</td></tr>`).join('');
 
@@ -2093,7 +2095,7 @@ window.searchVehicles=function(q){
   if(!q){res.style.display='none';return;}
   const nq=normalizeQ(q);
   const matches=Object.values(stock)
-    .filter(v=>[v.name,v.vin,v.color,v.sup].some(f=>normalizeQ(f||'').includes(nq)))
+    .filter(v=>[v.name,v.vin,v.color,v.sup,displaySupplier(v.sup)].some(f=>normalizeQ(f||'').includes(nq)))
     .sort((a,b)=>{const da=a.date||'',db=b.date||'';return da>db?-1:1;})
     .slice(0,20);
   if(!matches.length){res.style.display='none';return;}
@@ -2249,7 +2251,7 @@ window.renderInspections=function renderInspections(){
     list=list.filter(ins=>{
       const v=ins.vehicleId?(stock[ins.vehicleId]||stockArchive[ins.vehicleId]):null;
       const name=v?v.name:(ins.carName||'');
-      return [name,v?.vin,v?.color,v?.displayNote,v?.sup,ins.memo,ins.inspMemo]
+      return [name,v?.vin,v?.color,v?.displayNote,v?.sup,displaySupplier(v?.sup),ins.memo,ins.inspMemo]
         .some(f=>normalizeQ(f||'').includes(q));
     });
   }
