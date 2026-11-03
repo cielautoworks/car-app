@@ -277,7 +277,7 @@
     <div class="header-inner">
     <div style="flex-shrink:0">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.95</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.96</span></div>
     </div>
     <div class="tabs">
       <div class="tab" onclick="switchTab('loaner')">代車/レンタ</div>
@@ -2348,7 +2348,7 @@ window.toggleInspHistory=async function(){
     btn.style.color=inspShowHistory?'var(--cyan)':'';
     btn.textContent=inspShowHistory?'📁 履歴中':'📁 履歴';
   }
-  if(inspShowHistory&&Object.keys(stockArchive).length===0){
+  if(inspShowHistory&&!archiveLoaded){
     await fetchArchive();
   }
   renderInspections();
@@ -2716,10 +2716,12 @@ window.restoreFromArchive=async function(id){
   renderArchiveModal();
   renderStock();
 };
+let archiveLoaded=false; // stockArchiveを全件取得済みか(今回の起動中にアーカイブした分だけ入っている状態と区別する)
 async function fetchArchive(){
   try{
     const snap=await get(ref(db,'stockArchive'));
     stockArchive=snap.val()||{};
+    archiveLoaded=true;
   }catch(e){
     stockArchive={};
   }
@@ -2758,7 +2760,8 @@ function renderArchiveModal(){
       </label>
     </div>
     ${filtered.length?filtered.map(v=>{
-      const hasInsp=Object.values(inspections).some(i=>i.vehicleId===v.id);
+      const inspList=Object.values(inspections).filter(i=>i.vehicleId===v.id).sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+      const hasInsp=inspList.length>0;
       const ownAaCount=Object.values(listings).filter(l=>l.vehicleId===v.id).length;
       const totalAa=ownAaCount+(aaPhotoCounts[v.vin]||0);
       const chk=checkedArchiveIds.has(v.id)?'checked':'';
@@ -2771,9 +2774,10 @@ function renderArchiveModal(){
           <div style="font-size:11px;color:var(--text3);margin-top:2px">${v.vin||''}</div>
           <div style="font-size:11px;color:var(--text3)">仕入：${v.date||'-'} / アーカイブ：${v.archivedAt?new Date(v.archivedAt).toLocaleDateString('ja-JP',{month:'2-digit',day:'2-digit'}):'-'}</div>
           <div style="display:flex;gap:4px;margin-top:6px">
-            <span class="badge ${hasInsp?'b-insp-ok':'b-insp-skip'}" style="font-size:10px">📋点検シート${hasInsp?'あり':'なし'}</span>
+            <span class="badge ${hasInsp?'b-insp-ok':'b-insp-skip'}" style="font-size:10px">📋点検シート${hasInsp?inspList.length+'件':'なし'}</span>
             <span class="badge ${totalAa?'b-ad':'b-insp-skip'}" style="font-size:10px">🖼AA出品票${totalAa}枚</span>
           </div>
+          ${hasInsp?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${inspList.map(i=>`<button class="btn btn-xs btn-gray" onclick="viewPhotoById('${i.id}')">🖼 点検 ${i.date||''}</button>`).join('')}</div>`:''}
           <button class="btn btn-sm btn-gray" style="margin-top:8px;width:100%" onclick="restoreFromArchive('${v.id}')">↩ 在庫に戻す</button>
         </div>
       </div>
