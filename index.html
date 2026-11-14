@@ -277,7 +277,7 @@
     <div class="header-inner">
     <div style="flex-shrink:0">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.96</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.97</span></div>
     </div>
     <div class="tabs">
       <div class="tab" onclick="switchTab('loaner')">代車/レンタ</div>
@@ -534,6 +534,23 @@
       <button class="btn" style="flex:1" onclick="closeModal('modal-edit-history')">キャンセル</button>
       <button class="btn btn-primary" style="flex:1" onclick="saveEditHistory()">保存</button>
     </div>
+  </div>
+</div>
+
+<!-- 納車整備リスト -->
+<div class="modal-wrap" id="modal-dmaint">
+  <div class="modal-box"><div class="modal-handle"></div>
+    <p class="modal-title">🔧 納車整備リスト</p>
+    <p style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px" id="dmaint-car"></p>
+    <p style="font-size:11px;color:var(--text3);margin-bottom:10px" id="dmaint-status"></p>
+    <div id="dmaint-list" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+    <p class="lbl" style="margin-top:14px">項目を追加</p>
+    <div style="display:flex;gap:6px">
+      <input type="text" id="dmaint-new" maxlength="30" placeholder="例：タイヤ交換、ナンバー枠" style="flex:1;margin-bottom:0" onkeydown="if(event.key==='Enter'){event.preventDefault();addDmaintItem();}">
+      <button class="btn btn-primary btn-sm" onclick="addDmaintItem()">追加</button>
+    </div>
+    <p style="font-size:10px;color:var(--text3);margin-top:6px">※点灯中の項目をタップすると完了(消灯)。全部消灯すると「納車整備」ボタンも消灯します。</p>
+    <button class="btn" style="width:100%;margin-top:12px" onclick="closeModal('modal-dmaint')">閉じる</button>
   </div>
 </div>
 <div class="modal-wrap" id="modal-csv-update">
@@ -1623,7 +1640,7 @@ window.renderStock=function(){
       btnsHtml='<div class="action-btns-row">';
       if(s1==='sold'){
         btnsHtml+=`<button class="action-btn action-btn-dclean ${dCleanOn?'on':''}" onclick="quickAction(event,'${v.id}','dclean')">納車<br>清掃</button>`;
-        btnsHtml+=`<button class="action-btn action-btn-dmaint ${dMaintOn?'on':''}" onclick="quickAction(event,'${v.id}','dmaint')">納車<br>整備</button>`;
+        btnsHtml+=`<button class="action-btn action-btn-dmaint ${dMaintOn?'on':''}" onclick="openDeliveryMaint(event,'${v.id}')">納車<br>整備</button>`;
         btnsHtml+=`<button class="action-btn action-btn-doc ${docDoneOn?'on':''}" onclick="quickAction(event,'${v.id}','doc')">登録<br>手続</button>`;
       }else{
         btnsHtml+=`<button class="action-btn action-btn-clean ${cleanCls}" onclick="quickAction(event,'${v.id}','clean')">清掃<br>完了</button>`;
@@ -1728,13 +1745,89 @@ window.quickAction=async function(e,id,type){
     logNews(v.vin, `${v.name}${colorStr}の部品注文が完了しました`);
   }
 };
+// ===== 納車整備リスト(納車待ちカードの「納車整備」ボタンから開く) =====
+// stock/{id}/deliveryMaintItems = { キー: {label, on} } (on=true が点灯=未完了)。
+// 全項目が消灯(on=false)になると deliveryMaint(従来の納車整備ボタンの点灯状態)も false にする。
+// 未作成の車は、deliveryMaint が true なら既定の5項目すべて点灯、false なら全消灯として扱う。
+const DELIVERY_MAINT_DEFAULTS=['基本整備','バッテリー','ワイパー','エンジンオイル','キーレス電池'];
+let dmaintVid=null;
+function escHtml(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function getDmaintItems(v){
+  const cur=v.deliveryMaintItems;
+  if(cur&&typeof cur==='object'&&Object.keys(cur).length)return JSON.parse(JSON.stringify(cur));
+  const on=!!v.deliveryMaint,items={};
+  DELIVERY_MAINT_DEFAULTS.forEach((l,i)=>{items['d'+(i+1)]={label:l,on};});
+  return items;
+}
+function sortDmaintKeys(items){
+  return Object.keys(items).sort((a,b)=>{
+    const ra=a[0]==='d'?0:1,rb=b[0]==='d'?0:1;
+    return ra!==rb?ra-rb:(Number(a.slice(1))||0)-(Number(b.slice(1))||0);
+  });
+}
+function renderDmaintModal(){
+  const v=stock[dmaintVid];
+  if(!v){closeModal('modal-dmaint');return;}
+  const items=getDmaintItems(v),keys=sortDmaintKeys(items);
+  const left=keys.filter(k=>items[k].on).length;
+  document.getElementById('dmaint-car').textContent=(v.name||'')+(v.color?' '+toFullWidth(v.color):'');
+  document.getElementById('dmaint-status').textContent=left?`残り ${left} 項目`:'✅ すべて完了(納車整備ボタンは消灯しています)';
+  document.getElementById('dmaint-list').innerHTML=keys.map(k=>{
+    const it=items[k];
+    return `<div style="display:flex;align-items:stretch;gap:2px">
+      <button class="action-btn action-btn-dmaint ${it.on?'on':''}" style="width:auto;min-width:104px;height:48px;padding:0 12px" onclick="toggleDmaintItem('${k}')">${escHtml(it.label)}</button>
+      ${k[0]==='c'?`<button class="btn btn-xs btn-gray" style="align-self:center" onclick="removeDmaintItem('${k}')" title="この項目を削除">✕</button>`:''}
+    </div>`;
+  }).join('');
+}
+async function saveDmaintItems(items){
+  const anyOn=Object.values(items).some(i=>i.on);
+  try{
+    await dbUpd(`stock/${dmaintVid}`,{deliveryMaintItems:items,deliveryMaint:anyOn});
+  }catch(err){alert('保存に失敗しました: '+err.message);}
+  renderDmaintModal();
+}
+window.openDeliveryMaint=function(e,id){
+  if(e)e.stopPropagation();
+  if(!stock[id])return;
+  dmaintVid=id;
+  document.getElementById('dmaint-new').value='';
+  renderDmaintModal();
+  openModal('modal-dmaint');
+};
+window.toggleDmaintItem=async function(key){
+  const v=stock[dmaintVid];if(!v)return;
+  const items=getDmaintItems(v);
+  if(!items[key])return;
+  items[key].on=!items[key].on;
+  await saveDmaintItems(items);
+};
+window.addDmaintItem=async function(){
+  const v=stock[dmaintVid];if(!v)return;
+  const inp=document.getElementById('dmaint-new');
+  const label=inp.value.trim();
+  if(!label)return;
+  const items=getDmaintItems(v);
+  items['c'+Date.now()]={label,on:true};
+  inp.value='';
+  await saveDmaintItems(items);
+};
+window.removeDmaintItem=async function(key){
+  const v=stock[dmaintVid];if(!v)return;
+  const items=getDmaintItems(v);
+  if(!items[key])return;
+  if(!confirm(`「${items[key].label}」を削除しますか？`))return;
+  delete items[key];
+  await saveDmaintItems(items);
+};
+
 window.indivChange=async function(id,field,val){
   if(field==='s1'){
     const v=stock[id];if(!v)return;
     const upd={status1:val};
     if(val==='sold'){
       // 納車待ちに変更：納車3ボタンON、店頭作業ボタンは全てリセット
-      upd.deliveryClean=true;upd.deliveryMaint=true;upd.docDone=true;
+      upd.deliveryClean=true;upd.deliveryMaint=true;upd.docDone=true;upd.deliveryMaintItems=null;
       upd.cleaned=false;upd.photographed=false;upd.maintained=false;
     }
     // 代車・レンタカーに変更した場合、まだ登録されていなければ代車タブに追加
@@ -2159,7 +2252,7 @@ window.applyCsvUpdate=async function(){
   // 納車待ちに変更
   for(const id of toSold){
     const v=stock[id];if(!v)continue;
-    promises.push(dbUpd(`stock/${id}`,{status1:'sold',deliveryClean:true,deliveryMaint:true,docDone:true,cleaned:false,photographed:false,maintained:false}));
+    promises.push(dbUpd(`stock/${id}`,{status1:'sold',deliveryClean:true,deliveryMaint:true,deliveryMaintItems:null,docDone:true,cleaned:false,photographed:false,maintained:false}));
   }
   if(promises.length)await Promise.all(promises);
   // 納車完了→アーカイブ（パス移動）
