@@ -277,7 +277,7 @@
     <div class="header-inner">
     <div style="flex-shrink:0">
       <div class="header-title">🚗 ciel autoworks</div>
-      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.97</span></div>
+      <div class="header-sub">中古車管理システム <span style="color:var(--text3)">v1.98</span></div>
     </div>
     <div class="tabs">
       <div class="tab" onclick="switchTab('loaner')">代車/レンタ</div>
@@ -2501,7 +2501,10 @@ window.renderInspections=function renderInspections(){
       <input type="checkbox" class="photo-chk" data-id="${ins.id}" ${chk} onchange="toggleInspCheck('${ins.id}',this.checked)">
       ${isArchived?`<div style="font-size:9px;color:var(--text3);position:absolute;top:4px;right:4px;background:var(--surface2);padding:1px 4px;border-radius:3px">納車済</div>`:''}
       <div class="photo-info" style="padding:8px">
-        <div style="font-size:11px;font-weight:700;color:var(--text);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:22px" onclick="viewPhotoById('${ins.id}')">${displayName}</div>
+        <div style="display:flex;align-items:center;gap:4px;padding-right:22px">
+          <div style="font-size:11px;font-weight:700;color:var(--text);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:0 1 auto" onclick="viewPhotoById('${ins.id}')">${displayName}</div>
+          ${v&&v.vin&&(aaPhotoCounts[v.vin]||0)>0?`<span class="badge b-ad" style="cursor:pointer;flex-shrink:0" onclick="event.stopPropagation();openAaViewerByVin(decodeURIComponent('${encodeURIComponent(v.vin)}'))">AA</span>`:''}
+        </div>
         <div style="font-size:10px;color:var(--text3);margin-top:2px">${ins.date}${ins.needsParts?'<span style="color:var(--red)"> 🔩</span>':''}${ins.memo?'<span style="color:var(--text2)"> · '+ins.memo+'</span>':''}</div>
         ${ins.inspMemo?`<div style="font-size:10px;color:var(--amber);margin-top:2px">📝 ${ins.inspMemo}</div>`:''}
         <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;align-items:center">
@@ -2628,6 +2631,7 @@ window.openAaViewer=async function(vin){
   }
   setSyncSt('● 同期済み','ok');
 };
+window.openAaViewerByVin=function(vin){ if(vin)openAaViewer(vin); };
 window.closeAaViewer=function(){document.getElementById('aa-viewer').classList.remove('open');};
 // 背景(画像以外の領域)タップで閉じる。full-img-containerの既存パターンに合わせる。
 document.getElementById('aa-viewer-body').addEventListener('click',e=>{
@@ -2701,11 +2705,12 @@ window.fullImgParts=async function(){
 };
 
 // ===== アーカイブ（納車完了パス分離）=====
-// 納車完了(アーカイブ)時に、AA出品票関連データ(aaPhotos・car-app自身のlistings/listingPhotos)を削除する。
-// 点検シート(inspections/inspectionPhotos)は絶対に参照・削除しない。
-async function deleteAaDataForVehicle(vin,vehicleId){
+// 納車完了(アーカイブ)時は、car-app自身の旧listings/listingPhotosだけ削除し、aaPhotosは残す(v1.98〜)。
+// aaPhotos・点検シートは、アーカイブ画面から手動で削除するまで閲覧できる(容量が気になる分は期間絞り込み+一括削除)。
+// keepAaPhotos=true のときは aaPhotos/aaPhotoCounts を残す(納車完了時。アーカイブ画面から手動で削除するまで閲覧可能)
+async function deleteAaDataForVehicle(vin,vehicleId,keepAaPhotos){
   const dels=[];
-  if(vin){
+  if(vin&&!keepAaPhotos){
     dels.push(remove(ref(db,`aaPhotos/${vin}`)));
     dels.push(remove(ref(db,`adsData/aaPhotoCounts/${vin}`)));
     delete aaPhotoCounts[vin];
@@ -2754,7 +2759,7 @@ async function archiveVehicle(id){
   // 2. stockから削除
   await remove(ref(db,`stock/${id}`));
   // 3. AA出品票関連データを削除(aaPhotos・car-app自身のlistings/listingPhotos。点検シートには触れない)
-  await deleteAaDataForVehicle(v.vin,id);
+  await deleteAaDataForVehicle(v.vin,id,true);
   // 3.5 代車・レンタカー登録が残っていれば解除(stockId参照先消失による表示崩れ防止)
   const unlinkedCar=await unlinkCarsForStockId(id);
   // 4. ローカル更新
@@ -2787,7 +2792,7 @@ async function archiveMultiple(ids){
   (unlinkedResults[0]||[]).forEach(([id,car])=>{unlinkedByStockId[id]=car;});
   ids.forEach(id=>{const v=stockArchive[id];if(v)newsItems.push([v.vin, `${v.name}${v.color?toFullWidth(v.color):''}が納車完了しました${unlinkedByStockId[id]?'(代車・レンタカー登録も解除しました)':''}`]);});
   // AA出品票関連データを削除(aaPhotos・car-app自身のlistings/listingPhotos。点検シートには触れない)
-  await Promise.all(vins.map(([vin,id])=>deleteAaDataForVehicle(vin,id)));
+  await Promise.all(vins.map(([vin,id])=>deleteAaDataForVehicle(vin,id,true)));
   // News：1台ごとに個別記録
   await Promise.all(newsItems.map(([vin,msg])=>logNews(vin,msg)));
   setSyncSt('● 同期済み','ok');
@@ -2870,13 +2875,14 @@ function renderArchiveModal(){
             <span class="badge ${hasInsp?'b-insp-ok':'b-insp-skip'}" style="font-size:10px">📋点検シート${hasInsp?inspList.length+'件':'なし'}</span>
             <span class="badge ${totalAa?'b-ad':'b-insp-skip'}" style="font-size:10px">🖼AA出品票${totalAa}枚</span>
           </div>
-          ${hasInsp?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${inspList.map(i=>`<button class="btn btn-xs btn-gray" onclick="viewPhotoById('${i.id}')">🖼 点検 ${i.date||''}</button>`).join('')}</div>`:''}
+          ${(hasInsp||aaPhotoCounts[v.vin])?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${(aaPhotoCounts[v.vin]||0)>0?`<button class="btn btn-xs btn-gray" onclick="openAaViewerByVin(decodeURIComponent('${encodeURIComponent(v.vin||'')}'))">🖼 AA出品票</button>`:''}${inspList.map(i=>`<button class="btn btn-xs btn-gray" onclick="viewPhotoById('${i.id}')">🖼 点検 ${i.date||''}</button>`).join('')}</div>`:''}
           <button class="btn btn-sm btn-gray" style="margin-top:8px;width:100%" onclick="restoreFromArchive('${v.id}')">↩ 在庫に戻す</button>
         </div>
       </div>
     </div>`;}).join(''):'<p style="text-align:center;color:var(--text3);padding:10px 0">該当なし</p>'}
     <div id="archive-bulk-bar" style="display:${checkedArchiveIds.size?'flex':'none'};gap:6px;margin-top:4px">
       <button class="btn btn-sm btn-orange" style="flex:1" onclick="bulkDeleteAaFromArchive()">🖼 AA画像削除(${checkedArchiveIds.size})</button>
+      <button class="btn btn-sm btn-orange" style="flex:1" onclick="bulkDeleteInspFromArchive()">📋 点検シート削除(${checkedArchiveIds.size})</button>
       <button class="btn btn-sm btn-danger" style="flex:1" onclick="bulkFullDeleteFromArchive()">🗑 完全削除(${checkedArchiveIds.size})</button>
     </div>
     <button class="btn" style="width:100%;margin-top:4px" onclick="closeModal('modal-action')">閉じる</button>`;
@@ -2907,6 +2913,25 @@ window.bulkDeleteAaFromArchive=async function(){
   setSyncSt('● 同期済み','ok');
   renderArchiveModal();
 };
+// アーカイブ一括操作：選択車両の点検シート(inspections・inspectionPhotos)だけを削除。アーカイブ記録・AA画像には触れない。
+window.bulkDeleteInspFromArchive=async function(){
+  const ids=new Set(Array.from(checkedArchiveIds).filter(id=>stockArchive[id]));
+  if(!ids.size)return;
+  const targets=Object.values(inspections).filter(i=>ids.has(i.vehicleId));
+  if(!targets.length){alert('選択した車両に点検シートはありません');return;}
+  if(!confirm(`選択した${ids.size}台の点検シート(${targets.length}件・写真を含む)を削除します。取り消せません。アーカイブ記録・AA画像は残ります。よろしいですか？`))return;
+  showLoading('点検シートを削除中...');
+  try{
+    for(const i of targets){
+      await dbDel(`inspections/${i.id}`);
+      await dbDel(`inspectionPhotos/${i.id}`);
+    }
+  }catch(err){alert('削除に失敗しました: '+err.message);}
+  checkedArchiveIds.clear();
+  hideLoading();
+  setSyncSt('● 同期済み','ok');
+  renderArchiveModal();
+};
 // アーカイブ一括操作：選択車両のアーカイブ記録自体を完全に削除(一覧から消える・取り消し不可)。
 // AA出品票関連データも合わせて削除するが、点検シートには一切触れない。
 window.bulkFullDeleteFromArchive=async function(){
@@ -2922,7 +2947,7 @@ window.bulkFullDeleteFromArchive=async function(){
   setSyncSt('● 同期済み','ok');
   renderArchiveModal();
 };
-// ヘッダー長押し3秒でアーカイブボタン表示
+// ヘッダー長押し2秒でアーカイブ画面を開く
 (function(){
   let timer=null;
   const hdr=document.querySelector('.header-title');
@@ -2932,7 +2957,7 @@ window.bulkFullDeleteFromArchive=async function(){
       await fetchArchive();
       renderArchiveModal();
       openModal('modal-action');
-    },3000);
+    },2000);
   },{passive:true});
   hdr.addEventListener('touchend',()=>clearTimeout(timer),{passive:true});
   hdr.addEventListener('touchmove',()=>clearTimeout(timer),{passive:true});
@@ -2942,7 +2967,7 @@ window.bulkFullDeleteFromArchive=async function(){
       await fetchArchive();
       renderArchiveModal();
       openModal('modal-action');
-    },3000);
+    },2000);
   });
   hdr.addEventListener('mouseup',()=>clearTimeout(timer));
   hdr.addEventListener('mouseleave',()=>clearTimeout(timer));
